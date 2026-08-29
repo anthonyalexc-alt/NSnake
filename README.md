@@ -1,4 +1,4 @@
-# Neon Snake
+# NSnake
 
 The Nokia snake mechanics, rendered in neon. Vanilla JavaScript on an HTML5 canvas —
 no build step, no dependencies, no framework.

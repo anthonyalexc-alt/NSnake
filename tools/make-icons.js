@@ -1,4 +1,4 @@
-/* Renders the Neon Snake app icon to PNG with no dependencies:
+/* Renders the NSnake app icon to PNG with no dependencies:
    a tiny software rasteriser + Node's built-in zlib for PNG encoding.
    Draws once at high resolution, then box-downsamples to each target size. */
 

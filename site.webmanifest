@@ -1,6 +1,6 @@
 {
-  "name": "Neon Snake",
-  "short_name": "Neon Snake",
+  "name": "NSnake",
+  "short_name": "NSnake",
   "description": "The Nokia snake mechanics, rendered in neon.",
   "start_url": ".",
   "scope": ".",

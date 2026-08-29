@@ -1,4 +1,4 @@
-/* Neon Snake - theme accents are re-tinted at runtime via the --accent* custom properties */
+/* NSnake - theme accents are re-tinted at runtime via the --accent* custom properties */
 
 :root {
   --bg: #05070d;
@@ -168,7 +168,6 @@ canvas {
 }
 
 .logo span {
-  display: block;
   color: var(--accent);
   text-shadow: 0 0 18px var(--accent);
 }
