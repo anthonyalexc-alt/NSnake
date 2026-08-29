@@ -50,9 +50,14 @@ body {
 .hud {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
-  justify-content: space-between;
-  padding: 10px 14px;
+  gap: 6px 26px;
+  justify-content: center;
+  /* Only as wide as its four readouts, centred over the board, rather than
+     stretching the full width of the wrap. */
+  align-self: center;
+  width: auto;
+  max-width: 100%;
+  padding: 10px 22px;
   border: 1px solid var(--accent-soft);
   border-radius: 12px;
   background: rgba(255, 255, 255, 0.02);
@@ -463,8 +468,8 @@ html.pad-off .pad { display: none; }
 
   /* The HUD must stay a single row. Six items at the desktop sizes wrap to two
      on a 375px screen, which silently steals ~45px from the board's budget. */
-  .hud { padding: 8px 10px; gap: 4px; }
-  .hud-item { min-width: 42px; }
+  .hud { padding: 8px 12px; gap: 4px 13px; }
+  .hud-item { min-width: 38px; }
   .hud-label { font-size: 8px; letter-spacing: 0.12em; }
   .hud-value { font-size: 13px; }
 
