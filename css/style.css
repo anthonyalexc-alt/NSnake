@@ -516,13 +516,6 @@ html.pad-off .pad { display: none; }
   .start, .ghost { padding: 9px 18px; font-size: 13px; }
 }
 
-/* On the narrowest phones even a compact six-item HUD wraps. Grid and Wall mode
-   are chosen on the start screen and never change mid-run, so they are the two
-   that go. */
-@media (hover: none) and (pointer: coarse) and (max-width: 360px) {
-  .hud-grid, .hud-walls { display: none; }
-}
-
 /* The sound readout doubles as the mute toggle - on a phone there is no M key,
    so it has to stay reachable even on narrow screens. */
 .hud-mute {

@@ -87,8 +87,6 @@
         score: $('hud-score'),
         best: $('hud-best'),
         theme: $('hud-theme'),
-        grid: $('hud-grid'),
-        walls: $('hud-walls'),
         mute: $('hud-mute'),
         overScore: $('over-score'),
         overBest: $('over-best'),
@@ -184,8 +182,6 @@
       el.best.textContent = n;
       if (bump) { pop(el.best); }
     },
-    setGrid: function (cells) { el.grid.textContent = cells + ' × ' + cells; },
-    setWalls: function (label) { el.walls.textContent = label; },
     setThemeName: function (name) { el.theme.textContent = name; },
     setMute: function (muted) { el.mute.textContent = muted ? 'Off' : 'On'; },
 

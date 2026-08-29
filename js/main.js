@@ -214,8 +214,6 @@
 
     NS.ui.setScore(0, false);
     NS.ui.setBest(best);
-    NS.ui.setGrid(game.cells);
-    NS.ui.setWalls(NS.WALL_MODES[sel.mode].label);
     NS.ui.showPlaying();
 
     acc = 0;
@@ -229,8 +227,6 @@
     NS.ui.applyTheme(theme);
     NS.ui.setScore(0, false);
     NS.ui.setBest(NS.ui.highScore());
-    NS.ui.setGrid(NS.ui.cells());
-    NS.ui.setWalls(NS.WALL_MODES[NS.ui.selection().mode].label);
     NS.ui.showMenu();
   }
 
@@ -425,8 +421,6 @@
       // Keep the HUD and the menu backdrop in step with the selectors.
       onSelect: function () {
         if (state !== 'MENU') { return; }
-        NS.ui.setGrid(NS.ui.cells());
-        NS.ui.setWalls(NS.WALL_MODES[NS.ui.selection().mode].label);
         NS.ui.setBest(NS.ui.highScore());
       }
     });
