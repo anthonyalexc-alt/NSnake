@@ -235,6 +235,17 @@
     w: 'up', a: 'left', s: 'down', d: 'right'
   };
 
+  function togglePause() {
+    if (state === 'PLAYING') {
+      state = 'PAUSED';
+      NS.ui.showPause(true);
+    } else if (state === 'PAUSED') {
+      state = 'PLAYING';
+      acc = 0;
+      NS.ui.showPause(false);
+    }
+  }
+
   function onKey(e) {
     var k = e.key;
     var lower = k.length === 1 ? k.toLowerCase() : k;
@@ -259,8 +270,7 @@
 
     if (k === ' ' || lower === 'p') {
       e.preventDefault();
-      if (state === 'PLAYING') { state = 'PAUSED'; NS.ui.showPause(true); }
-      else if (state === 'PAUSED') { state = 'PLAYING'; acc = 0; NS.ui.showPause(false); }
+      togglePause();
       return;
     }
 
@@ -268,6 +278,62 @@
       NS.game.turn(game, KEYS[lower]);
       e.preventDefault();
     }
+  }
+
+  /* ---------------- touch ---------------- */
+
+  var SWIPE_PX = 22;   // how far a finger travels before it counts as a swipe
+
+  function initTouch(stage) {
+    var originX = 0, originY = 0, tracking = false;
+
+    stage.addEventListener('pointerdown', function (e) {
+      if (e.pointerType === 'mouse') { return; }
+      tracking = true;
+      originX = e.clientX;
+      originY = e.clientY;
+      NS.audio.unlock();
+    });
+
+    stage.addEventListener('pointermove', function (e) {
+      if (!tracking || state !== 'PLAYING') { return; }
+      var dx = e.clientX - originX;
+      var dy = e.clientY - originY;
+      if (Math.abs(dx) < SWIPE_PX && Math.abs(dy) < SWIPE_PX) { return; }
+
+      NS.game.turn(game, Math.abs(dx) > Math.abs(dy)
+        ? (dx > 0 ? 'right' : 'left')
+        : (dy > 0 ? 'down' : 'up'));
+
+      // Re-anchor so a long drag can chain several turns without lifting.
+      originX = e.clientX;
+      originY = e.clientY;
+      e.preventDefault();
+    });
+
+    ['pointerup', 'pointercancel', 'pointerleave'].forEach(function (evt) {
+      stage.addEventListener(evt, function () { tracking = false; });
+    });
+
+    var pad = document.getElementById('pad');
+
+    // pointerdown, not click - a tap should register on contact, not on release.
+    pad.addEventListener('pointerdown', function (e) {
+      var btn = e.target.closest('.pad-btn');
+      if (!btn) { return; }
+      e.preventDefault();
+      NS.audio.unlock();
+
+      var dir = btn.getAttribute('data-dir');
+      if (dir) {
+        if (state === 'PLAYING') { NS.game.turn(game, dir); }
+        return;
+      }
+      if (state === 'MENU' || state === 'OVER') { startRun(); }
+      else { togglePause(); }
+    });
+
+    pad.addEventListener('contextmenu', function (e) { e.preventDefault(); });
   }
 
   /* ---------------- boot ---------------- */
@@ -297,6 +363,13 @@
 
     window.addEventListener('keydown', onKey);
     window.addEventListener('pointerdown', function () { NS.audio.unlock(); });
+    initTouch(canvas.parentNode);
+
+    // Tapping the Sound readout mutes - the only way to do it without a keyboard.
+    document.querySelector('.hud-mute').addEventListener('click', function () {
+      NS.audio.unlock();
+      NS.ui.setMute(NS.audio.toggleMute());
+    });
 
     var resizeTimer = null;
     window.addEventListener('resize', function () {

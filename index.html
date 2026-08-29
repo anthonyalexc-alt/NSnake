@@ -2,11 +2,21 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>Neon Snake</title>
 <meta name="description" content="A neon take on the classic Nokia snake game.">
 <link rel="stylesheet" href="css/style.css">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%2305070d'/><rect x='6' y='14' width='16' height='5' rx='2' fill='%2300e5ff'/><circle cx='25' cy='11' r='3' fill='%23ff2fd0'/></svg>">
+
+<!-- Home-screen install. iOS ignores SVG here, so these are real PNGs. -->
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="manifest" href="site.webmanifest">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Neon Snake">
+<meta name="theme-color" content="#05070d">
 </head>
 <body>
 <div class="wrap">
@@ -73,6 +83,16 @@
       </div>
     </div>
   </div>
+
+  <div class="pad" id="pad">
+    <button type="button" class="pad-btn pad-up" data-dir="up" aria-label="Up">&#9650;</button>
+    <button type="button" class="pad-btn pad-left" data-dir="left" aria-label="Left">&#9664;</button>
+    <button type="button" class="pad-btn pad-mid" data-act="pause" aria-label="Pause">&#10073;&#10073;</button>
+    <button type="button" class="pad-btn pad-right" data-dir="right" aria-label="Right">&#9654;</button>
+    <button type="button" class="pad-btn pad-down" data-dir="down" aria-label="Down">&#9660;</button>
+  </div>
+
+  <p class="touch-hint">Swipe the board to steer &middot; or use the pad</p>
 
   <footer class="keys">
     <span><b>&larr;&uarr;&rarr;&darr;</b> / <b>WASD</b> steer</span>

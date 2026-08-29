@@ -17,6 +17,19 @@ Open `index.html` in a browser. That's it.
 | `M` | Mute |
 | `Esc` | Back to menu |
 
+On a touch device: **swipe the board** to steer — a long drag can chain several
+turns without lifting your finger — or use the on-screen D-pad, whose centre
+button pauses. Tapping the **Sound** readout in the HUD mutes. The pad and the
+swipe handler appear only on `(pointer: coarse)` devices, so a mouse drag on a
+desktop never steers the snake.
+
+### Adding it to a phone home screen
+
+Open the site, then Share → *Add to Home Screen*. It installs with the neon icon
+from `icons/`, launches full-screen with no browser chrome, and locks to portrait.
+iOS ignores SVG favicons for home-screen icons, which is why `icons/` holds real
+PNGs rather than the inline SVG used for the browser tab.
+
 ## Rules
 
 - One point per apple. The snake grows by one segment each time.
@@ -62,14 +75,16 @@ Solid one. They live in `localStorage` on your own machine.
 ## Layout
 
 ```
-index.html        markup, HUD, overlays
+index.html        markup, HUD, overlays, D-pad
 css/style.css     neon shell; accent colours are CSS custom properties re-tinted per theme
+site.webmanifest  home-screen install metadata
+icons/            app icons (PNG, generated - see below)
 js/config.js      sizes, speed, cadence, storage helpers
 js/audio.js       Web Audio blips (no audio files)
 js/themes.js      the three maps: background painters and apple shapes
 js/snake.js       pure game state - movement, growth, food, collision. No DOM.
 js/ui.js          screens, HUD, menu selectors, high scores
-js/main.js        boot, fixed-timestep loop, input, rendering
+js/main.js        boot, fixed-timestep loop, input, swipe/pad handling, rendering
 ```
 
 Scripts are classic `<script>` tags rather than ES modules, which is what lets
@@ -86,6 +101,14 @@ Scripts are classic `<script>` tags rather than ES modules, which is what lets
   render instead of dozens.
 - **Food spawns from a list of free cells**, not by rejection sampling, so it stays
   instant even when the snake covers most of a small board.
+- **The board is sized off the space left over** on touch layouts
+  (`min(96vw, 100dvh - reserve)`) rather than a fixed fraction of the viewport, so
+  the D-pad can never be pushed off the bottom of a short phone screen.
+- **The icons are generated, not hand-drawn.** `tools/make-icons.js` is a small
+  software rasteriser — signed distance fields for the rounded segments, hex apple
+  and glow, supersampled and box-downsampled, then written out through a minimal
+  PNG encoder built on Node's `zlib`. No image library, no binary assets to trust.
+  Regenerate with `node tools/make-icons.js icons`.
 
 ## Deploying
 

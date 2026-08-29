@@ -28,8 +28,14 @@ body {
   align-items: center;
   justify-content: center;
   padding: 16px;
+  padding-top: max(16px, env(safe-area-inset-top));
+  padding-bottom: max(16px, env(safe-area-inset-bottom));
   transition: background 600ms ease;
   overflow-x: hidden;
+  overscroll-behavior: none;          /* no pull-to-refresh mid-run */
+  -webkit-tap-highlight-color: transparent;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 .wrap {
@@ -91,6 +97,8 @@ body {
   position: relative;
   aspect-ratio: 1 / 1;
   width: 100%;
+  align-self: center;
+  touch-action: none;                 /* swipes steer; they must not scroll */
   border-radius: 16px;
   overflow: hidden;
   border: 1px solid var(--accent-soft);
@@ -330,7 +338,100 @@ canvas {
   font-weight: 700;
 }
 
+/* ---------- Touch controls ---------- */
+
+/* Hidden on pointer devices; the media query below reveals them on touch. */
+.pad, .touch-hint { display: none; }
+
+.pad {
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  gap: 8px;
+  width: min(48vw, 170px);
+  margin: 2px auto 0;
+  touch-action: none;
+}
+
+.pad-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 17px;
+  line-height: 1;
+  color: var(--accent);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--accent-soft);
+  border-radius: 14px;
+  aspect-ratio: 1 / 1;
+  cursor: pointer;
+  touch-action: none;
+  transition: background 120ms ease, transform 120ms ease;
+}
+
+.pad-btn:active {
+  background: var(--accent-dim);
+  transform: scale(0.94);
+}
+
+.pad-up    { grid-area: 1 / 2; }
+.pad-left  { grid-area: 2 / 1; }
+.pad-mid   { grid-area: 2 / 2; font-size: 12px; letter-spacing: 1px; opacity: 0.75; }
+.pad-right { grid-area: 2 / 3; }
+.pad-down  { grid-area: 3 / 2; }
+
+.touch-hint {
+  margin: 0;
+  text-align: center;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+
+@media (hover: none) and (pointer: coarse) {
+  .pad { display: grid; }
+  .touch-hint { display: block; }
+  .keys { display: none; }            /* keyboard hints are useless here */
+
+  /* Vertical space the HUD, pad, hint, gaps and padding need. */
+  :root { --reserve: 300px; }
+
+  .wrap { width: min(96vw, 640px); gap: 10px; }
+
+  /* Size the board off the space everything else leaves behind, so it never
+     pushes the pad off-screen on a short phone. dvh tracks the browser chrome
+     collapsing on scroll; the vh line is the fallback. */
+  .stage {
+    width: auto;
+    max-width: 96vw;
+    height: min(96vw, calc(100vh - var(--reserve)));
+    height: min(96vw, calc(100dvh - var(--reserve)));
+  }
+
+  .hud { padding: 8px 10px; }
+  .hud-value { font-size: 15px; }
+  .panel { padding: 18px 16px; }
+
+  /* Overlay hints name keys that a phone does not have. */
+  .panel .hint { display: none; }
+}
+
+/* Short viewports - landscape, or small older phones. Reclaim the height the
+   hint and a full-size pad were taking and give it back to the board. */
+@media (hover: none) and (pointer: coarse) and (max-height: 560px) {
+  :root { --reserve: 252px; }
+  .touch-hint { display: none; }
+  .pad { width: min(42vw, 140px); gap: 6px; }
+  .pad-btn { border-radius: 11px; font-size: 15px; }
+}
+
+/* The sound readout doubles as the mute toggle - on a phone there is no M key,
+   so it has to stay reachable even on narrow screens. */
+.hud-mute {
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
 @media (max-width: 480px) {
-  .hud-mute { display: none; }
   .opt { font-size: 12px; }
 }
