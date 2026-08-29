@@ -11,8 +11,21 @@
   }
 
   var el = {};
-  var selection = { size: 'M', mode: 'SOLID', pad: 'SHOW' };
+  var selection = { size: 'M', mode: 'SOLID', pad: 'SHOW', diff: 'NORMAL' };
   var handlers = {};
+
+  // Scores from before difficulty existed were all Normal speed on a clear
+  // board, so they belong in the Normal bucket rather than being orphaned.
+  function migrateLegacyScores() {
+    ['S', 'M', 'L'].forEach(function (size) {
+      ['SOLID', 'WRAP'].forEach(function (mode) {
+        var old = NS.storage.get(NS.storage.legacyHighKey(size, mode), null);
+        if (old === null) { return; }
+        var moved = NS.storage.highKey(size, mode, 'NORMAL');
+        if (NS.storage.get(moved, null) === null) { NS.storage.set(moved, old); }
+      });
+    });
+  }
 
   // Hiding the arrow buttons hands their space back to the board.
   function applyPadMode() {
@@ -40,6 +53,7 @@
         opts[i].classList.toggle('is-on', on);
       }
     });
+    if (el.selDiff) { el.selDiff.value = selection.diff; }
     el.menuBest.textContent = NS.ui.highScore();
     applyPadMode();
     if (handlers.onSelect) { handlers.onSelect(); }
@@ -64,6 +78,7 @@
         selSize: $('sel-size'),
         selMode: $('sel-mode'),
         selPad: $('sel-pad'),
+        selDiff: $('sel-difficulty'),
         touchHint: $('touch-hint'),
         menuBest: $('menu-best'),
         btnStart: $('btn-start'),
@@ -80,8 +95,21 @@
         overRecord: $('over-record')
       };
 
-      // Remember the arrow-button preference across sessions.
+      migrateLegacyScores();
+
+      // Remember the arrow-button and difficulty preferences across sessions.
       selection.pad = NS.storage.get(NS.storage.padKey, 'SHOW') === 'HIDE' ? 'HIDE' : 'SHOW';
+      var storedDiff = NS.storage.get(NS.storage.diffKey, 'NORMAL');
+      selection.diff = NS.DIFFICULTIES[storedDiff] ? storedDiff : 'NORMAL';
+
+      if (el.selDiff) {
+        el.selDiff.addEventListener('change', function () {
+          selection.diff = NS.DIFFICULTIES[this.value] ? this.value : 'NORMAL';
+          NS.storage.set(NS.storage.diffKey, selection.diff);
+          this.blur();            // or the focused select would swallow Space
+          paintSelectors();
+        });
+      }
 
       [el.selSize, el.selMode, el.selPad].forEach(function (root) {
         if (!root) { return; }
@@ -108,13 +136,15 @@
     cells: function () { return NS.MAP_SIZES[selection.size].cells; },
 
     highScore: function () {
-      var raw = NS.storage.get(NS.storage.highKey(selection.size, selection.mode), '0');
+      var raw = NS.storage.get(
+        NS.storage.highKey(selection.size, selection.mode, selection.diff), '0');
       var n = parseInt(raw, 10);
       return isNaN(n) ? 0 : n;
     },
 
     saveHighScore: function (score) {
-      NS.storage.set(NS.storage.highKey(selection.size, selection.mode), score);
+      NS.storage.set(
+        NS.storage.highKey(selection.size, selection.mode, selection.diff), score);
     },
 
     /* ---- screens ---- */

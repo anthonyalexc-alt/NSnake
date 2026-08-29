@@ -249,6 +249,54 @@ canvas {
   box-shadow: 0 0 18px var(--accent-dim);
 }
 
+/* ---------- Dropdown ---------- */
+
+.dropdown { position: relative; }
+
+.dropdown::after {                    /* custom caret; the native one is hidden */
+  content: "";
+  position: absolute;
+  right: 13px;
+  top: 50%;
+  margin-top: -2px;
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 6px solid var(--accent);
+  pointer-events: none;
+}
+
+.dropdown select {
+  width: 100%;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent);
+  background: var(--accent-dim);
+  border: 1px solid var(--accent);
+  border-radius: 10px;
+  padding: 10px 32px 10px 12px;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  box-shadow: 0 0 18px var(--accent-dim);
+  transition: box-shadow 160ms ease, border-color 160ms ease;
+}
+
+.dropdown select:hover,
+.dropdown select:focus {
+  outline: none;
+  box-shadow: 0 0 26px var(--accent-soft);
+}
+
+/* The popup list is drawn by the OS, so it only takes plain colours. */
+.dropdown option {
+  background: #0a0d16;
+  color: #e8f6ff;
+  font-weight: 600;
+}
+
 /* ---------- Buttons ---------- */
 
 .start, .ghost {
@@ -413,8 +461,12 @@ html.pad-off .pad { display: none; }
     height: min(96vw, calc(100dvh - var(--reserve)));
   }
 
-  .hud { padding: 8px 10px; }
-  .hud-value { font-size: 15px; }
+  /* The HUD must stay a single row. Six items at the desktop sizes wrap to two
+     on a 375px screen, which silently steals ~45px from the board's budget. */
+  .hud { padding: 8px 10px; gap: 4px; }
+  .hud-item { min-width: 42px; }
+  .hud-label { font-size: 8px; letter-spacing: 0.12em; }
+  .hud-value { font-size: 13px; }
 
   /* Overlay hints name keys that a phone does not have. */
   .panel .hint { display: none; }
@@ -449,6 +501,26 @@ html.pad-off .pad { display: none; }
   .touch-hint { display: none; }
   .pad { width: min(42vw, 140px); gap: 6px; }
   .pad-btn { border-radius: 11px; font-size: 15px; }
+
+  /* Four controls plus the logo overrun a short screen, and the board clips
+     nothing here only because the overlay scrolls. Tighten it so START stays
+     on screen without scrolling. */
+  .panel { padding: 12px; }
+  .logo { font-size: clamp(18px, 5.5vw, 26px); margin-bottom: 9px; }
+  .selector { margin-bottom: 7px; }
+  .selector-label { margin-bottom: 4px; font-size: 9px; }
+  .opt { padding: 5px 4px; font-size: 11px; }
+  .opt em { font-size: 8px; }
+  .dropdown select { padding: 7px 28px 7px 10px; font-size: 12px; }
+  .best-line { margin-bottom: 9px; font-size: 10px; }
+  .start, .ghost { padding: 9px 18px; font-size: 13px; }
+}
+
+/* On the narrowest phones even a compact six-item HUD wraps. Grid and Wall mode
+   are chosen on the start screen and never change mid-run, so they are the two
+   that go. */
+@media (hover: none) and (pointer: coarse) and (max-width: 360px) {
+  .hud-grid, .hud-walls { display: none; }
 }
 
 /* The sound readout doubles as the mute toggle - on a phone there is no M key,

@@ -25,8 +25,8 @@
     <div class="hud-item"><span class="hud-label">Score</span><span class="hud-value" id="hud-score">0</span></div>
     <div class="hud-item"><span class="hud-label">Best</span><span class="hud-value" id="hud-best">0</span></div>
     <div class="hud-item"><span class="hud-label">Map</span><span class="hud-value" id="hud-theme">Techy</span></div>
-    <div class="hud-item"><span class="hud-label">Grid</span><span class="hud-value" id="hud-grid">25 &times; 25</span></div>
-    <div class="hud-item"><span class="hud-label">Walls</span><span class="hud-value" id="hud-walls">Solid</span></div>
+    <div class="hud-item hud-grid"><span class="hud-label">Grid</span><span class="hud-value" id="hud-grid">25 &times; 25</span></div>
+    <div class="hud-item hud-walls"><span class="hud-label">Walls</span><span class="hud-value" id="hud-walls">Solid</span></div>
     <div class="hud-item hud-mute"><span class="hud-label">Sound</span><span class="hud-value" id="hud-mute">On</span></div>
   </header>
 
@@ -51,6 +51,17 @@
           <div class="opts">
             <button type="button" class="opt is-on" data-value="SOLID">Solid Walls<em>edge kills</em></button>
             <button type="button" class="opt" data-value="WRAP">Wrap Around<em>pass through</em></button>
+          </div>
+        </div>
+
+        <div class="selector">
+          <label class="selector-label" for="sel-difficulty">Difficulty</label>
+          <div class="dropdown">
+            <select id="sel-difficulty">
+              <option value="EASY">Easy &middot; slower, clear board</option>
+              <option value="NORMAL">Normal &middot; standard speed</option>
+              <option value="HARD">Hard &middot; fast, with obstacles</option>
+            </select>
           </div>
         </div>
 

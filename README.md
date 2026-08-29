@@ -56,6 +56,19 @@ same space on screen either way, so a larger map means smaller cells and longer 
 | Solid Walls | Hitting an edge ends the run (classic Nokia) |
 | Wrap Around | The snake reappears on the opposite side |
 
+**Difficulty** sets the speed, and on Hard also litters the board with static
+blocks that kill on contact.
+
+| Difficulty | Speed | Board |
+| --- | --- | --- |
+| Easy | ~6 moves/sec | clear |
+| Normal | ~9 moves/sec | clear |
+| Hard | ~14 moves/sec | scattered blocks (about `cells × 0.9` of them) |
+
+Normal is exactly the game as it was before difficulty existed, so it stays the
+default. High scores are kept per difficulty as well as per size and wall mode —
+an Easy score should never outrank a Hard one.
+
 ## What changes as you score
 
 - **Every 5 points** the snake picks a new neon hue. It never picks a colour close to
@@ -120,6 +133,12 @@ Scripts are classic `<script>` tags rather than ES modules, which is what lets
   render instead of dozens.
 - **Food spawns from a list of free cells**, not by rejection sampling, so it stays
   instant even when the snake covers most of a small board.
+- **Hard's blocks are validated before the board ships.** Blocks go into the same
+  `occupied` set as the snake, so collision and food placement need no extra checks.
+  A candidate layout is only accepted if a flood fill proves every free cell is still
+  reachable from every other — otherwise a block wall could strand the apple somewhere
+  the snake can never reach. The snake's own cells and an eight-cell run-up ahead of it
+  are always kept clear.
 - **The Golden board is light, so it carries its own page colour.** A theme sets the
   page background from `pageBg` where it has one, falling back to `ground`; without that
   split, the bright gold board would wash out the light HUD text. On that level the

@@ -15,6 +15,7 @@
   var acc = 0;
   var last = 0;
   var best = 0;
+  var tickMs = NS.TICK_MS;      // set per run from the chosen difficulty
 
   /* ---------------- canvas plumbing ---------------- */
 
@@ -135,6 +136,40 @@
     });
   }
 
+  // Hard scatters static blocks. One shared look tinted with the theme accent,
+  // so every map gets obstacles that read as "wall" without bespoke art.
+  function drawBlocks(cell) {
+    if (!game.blocks || !game.blocks.size) { return; }
+    var cells = game.cells;
+    var pad = cell * 0.05;
+    var size = cell - pad * 2;
+    var radius = Math.max(1, cell * 0.16);
+
+    function path() {
+      ctx.beginPath();
+      game.blocks.forEach(function (id) {
+        roundRectPath(ctx, (id % cells) * cell + pad,
+          Math.floor(id / cells) * cell + pad, size, size, radius);
+      });
+    }
+
+    ctx.save();
+    ctx.shadowColor = theme.accent;
+    ctx.shadowBlur = cell * 0.45;
+    ctx.fillStyle = 'rgba(9,9,14,0.93)';
+    path();
+    ctx.fill();
+    ctx.restore();
+
+    ctx.save();
+    ctx.globalAlpha = 0.8;
+    ctx.strokeStyle = theme.accent;
+    ctx.lineWidth = Math.max(1, cell * 0.08);
+    path();
+    ctx.stroke();
+    ctx.restore();
+  }
+
   function render(time) {
     var cells = game ? game.cells : NS.ui.cells();
     var cell = PX / cells;
@@ -144,6 +179,8 @@
     ctx.drawImage(bg, 0, 0, PX, PX);
 
     if (!game) { return; }
+
+    drawBlocks(cell);
 
     if (game.food) {
       var pulse = 0.5 + 0.5 * Math.sin(time / 260);
@@ -165,7 +202,11 @@
 
   function startRun() {
     var sel = NS.ui.selection();
-    game = NS.game.create(NS.MAP_SIZES[sel.size].cells, sel.mode);
+    var cells = NS.MAP_SIZES[sel.size].cells;
+    var diff = NS.DIFFICULTIES[sel.diff] || NS.DIFFICULTIES.NORMAL;
+
+    tickMs = diff.tickMs;
+    game = NS.game.create(cells, sel.mode, NS.blockCount(diff.key, cells));
     best = NS.ui.highScore();
 
     syncTheme(true);
@@ -246,8 +287,8 @@
     if (state === 'PLAYING') {
       // A backgrounded tab returns a huge dt; don't fast-forward the snake.
       acc += Math.min(dt, 250);
-      while (acc >= NS.TICK_MS) {
-        acc -= NS.TICK_MS;
+      while (acc >= tickMs) {
+        acc -= tickMs;
         tick();
         if (state !== 'PLAYING') { break; }
       }

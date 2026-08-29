@@ -20,6 +20,22 @@
     WRAP:  { key: 'WRAP',  label: 'Wrap' }
   };
 
+  // Difficulty sets the tick rate, and on Hard also litters the board with
+  // static blocks. Normal is exactly the game as it was before difficulty
+  // existed, so it stays the default.
+  NS.DIFFICULTIES = {
+    EASY:   { key: 'EASY',   label: 'Easy',   tickMs: 167, blockFactor: 0 },
+    NORMAL: { key: 'NORMAL', label: 'Normal', tickMs: 111, blockFactor: 0 },
+    HARD:   { key: 'HARD',   label: 'Hard',   tickMs: 71,  blockFactor: 0.9 }
+  };
+
+  NS.DIFFICULTY_ORDER = ['EASY', 'NORMAL', 'HARD'];
+
+  NS.blockCount = function (diffKey, cells) {
+    var d = NS.DIFFICULTIES[diffKey];
+    return d ? Math.round(cells * d.blockFactor) : 0;
+  };
+
   // Curated neon hues - all high saturation, all readable on a dark ground.
   NS.SNAKE_HUES = [190, 300, 100, 45, 265, 330, 160, 210, 75, 15];
 
@@ -48,11 +64,18 @@
   };
 
   NS.storage = {
-    highKey: function (sizeKey, modeKey) {
+    // Difficulty is part of the key: an Easy score should not outrank a Hard one.
+    highKey: function (sizeKey, modeKey, diffKey) {
+      return 'neonsnake.hi.' + sizeKey + '.' + modeKey + '.' + diffKey;
+    },
+    // The key used before difficulty existed. Those runs were all at Normal
+    // speed on a clear board, so they migrate into the Normal bucket.
+    legacyHighKey: function (sizeKey, modeKey) {
       return 'neonsnake.hi.' + sizeKey + '.' + modeKey;
     },
     muteKey: 'neonsnake.muted',
     padKey: 'neonsnake.pad',
+    diffKey: 'neonsnake.difficulty',
     // localStorage throws in some privacy modes - never let that break the game.
     get: function (key, fallback) {
       try {
