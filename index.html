@@ -54,6 +54,14 @@
           </div>
         </div>
 
+        <div class="selector" id="sel-pad" data-group="pad">
+          <div class="selector-label">Arrow buttons</div>
+          <div class="opts">
+            <button type="button" class="opt is-on" data-value="SHOW">Show<em>buttons + swipe</em></button>
+            <button type="button" class="opt" data-value="HIDE">Hide<em>swipe only</em></button>
+          </div>
+        </div>
+
         <p class="best-line">Best on this setup &middot; <b id="menu-best">0</b></p>
         <button type="button" class="start" id="btn-start">START</button>
         <p class="hint">&larr;&uarr;&rarr;&darr; or WASD to steer &middot; Enter to start</p>
@@ -92,7 +100,7 @@
     <button type="button" class="pad-btn pad-down" data-dir="down" aria-label="Down">&#9660;</button>
   </div>
 
-  <p class="touch-hint">Swipe the board to steer &middot; or use the pad</p>
+  <p class="touch-hint" id="touch-hint">Swipe to steer &middot; or use the buttons</p>
 
   <footer class="keys">
     <span><b>&larr;&uarr;&rarr;&darr;</b> / <b>WASD</b> steer</span>

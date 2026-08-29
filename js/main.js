@@ -65,8 +65,11 @@
 
   function drawSnake(cell, time) {
     var body = game.body;
-    var glow = NS.hsl(hue, 100, 58);
-    var core = NS.hsl(hue, 100, 84);
+    var diamond = NS.isGolden(game.score);
+    // Diamond drops the hue entirely: an icy white body under a wide cold glow,
+    // with the facet colour shifting along the body and over time.
+    var glow = diamond ? 'hsl(195,100%,72%)' : NS.hsl(hue, 100, 58);
+    var core = diamond ? '#ffffff' : NS.hsl(hue, 100, 84);
     var pad = cell * 0.09;
     var size = cell - pad * 2;
     var radius = Math.max(1, cell * 0.28);
@@ -75,7 +78,7 @@
     // One fill for the whole body means one shadow render, not one per segment.
     ctx.save();
     ctx.shadowColor = glow;
-    ctx.shadowBlur = cell * 0.85;
+    ctx.shadowBlur = cell * (diamond ? 1.15 : 0.85);
     ctx.fillStyle = glow;
     ctx.beginPath();
     for (i = 0; i < body.length; i++) {
@@ -93,6 +96,10 @@
       var inset = pad + cell * (0.1 + t * 0.09);
       var s = cell - inset * 2;
       if (s <= 0) { continue; }
+      if (diamond) {
+        // Prismatic sheen travelling down the body.
+        ctx.fillStyle = NS.hsl(185 + ((i * 13 + time / 26) % 95), 100, 90);
+      }
       ctx.beginPath();
       roundRectPath(ctx, seg.x * cell + inset, seg.y * cell + inset, s, s, Math.max(1, s * 0.3));
       ctx.fill();
@@ -202,9 +209,10 @@
     if (score % NS.THEME_EVERY === 0 && syncTheme(false)) {
       ensureBackground(game.cells);
       NS.ui.flash();
-      NS.audio.themeChange();
+      if (score === NS.GOLDEN_SCORE) { NS.audio.win(); } else { NS.audio.themeChange(); }
     }
-    if (score % NS.COLOR_EVERY === 0) {
+    // Once the snake turns to diamond it keeps that look - no more hue changes.
+    if (score % NS.COLOR_EVERY === 0 && !NS.isGolden(score)) {
       pickHue();
       if (score % NS.THEME_EVERY !== 0) { NS.audio.colorChange(); }
     }
@@ -284,18 +292,21 @@
 
   var SWIPE_PX = 22;   // how far a finger travels before it counts as a swipe
 
-  function initTouch(stage) {
+  function initTouch(surface) {
     var originX = 0, originY = 0, tracking = false;
 
-    stage.addEventListener('pointerdown', function (e) {
+    surface.addEventListener('pointerdown', function (e) {
       if (e.pointerType === 'mouse') { return; }
+      // The arrow buttons and the HUD own their taps; everything else is swipe
+      // area, so steering still works with the buttons hidden.
+      if (e.target.closest('.pad') || e.target.closest('.hud')) { return; }
       tracking = true;
       originX = e.clientX;
       originY = e.clientY;
       NS.audio.unlock();
     });
 
-    stage.addEventListener('pointermove', function (e) {
+    surface.addEventListener('pointermove', function (e) {
       if (!tracking || state !== 'PLAYING') { return; }
       var dx = e.clientX - originX;
       var dy = e.clientY - originY;
@@ -312,7 +323,7 @@
     });
 
     ['pointerup', 'pointercancel', 'pointerleave'].forEach(function (evt) {
-      stage.addEventListener(evt, function () { tracking = false; });
+      surface.addEventListener(evt, function () { tracking = false; });
     });
 
     var pad = document.getElementById('pad');
@@ -363,7 +374,7 @@
 
     window.addEventListener('keydown', onKey);
     window.addEventListener('pointerdown', function () { NS.audio.unlock(); });
-    initTouch(canvas.parentNode);
+    initTouch(document.querySelector('.wrap'));
 
     // Tapping the Sound readout mutes - the only way to do it without a keyboard.
     document.querySelector('.hud-mute').addEventListener('click', function () {

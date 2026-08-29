@@ -5,15 +5,29 @@
   function $(id) { return document.getElementById(id); }
 
   var el = {};
-  var selection = { size: 'M', mode: 'SOLID' };
+  var selection = { size: 'M', mode: 'SOLID', pad: 'SHOW' };
   var handlers = {};
+
+  // Hiding the arrow buttons hands their space back to the board.
+  function applyPadMode() {
+    var off = selection.pad === 'HIDE';
+    document.documentElement.classList.toggle('pad-off', off);
+    NS.storage.set(NS.storage.padKey, selection.pad);
+    if (el.touchHint) {
+      el.touchHint.textContent = off
+        ? 'Swipe anywhere to steer'
+        : 'Swipe to steer · or use the buttons';
+    }
+  }
 
   function paintSelectors() {
     var groups = [
       { root: el.selSize, value: selection.size },
-      { root: el.selMode, value: selection.mode }
+      { root: el.selMode, value: selection.mode },
+      { root: el.selPad, value: selection.pad }
     ];
     groups.forEach(function (g) {
+      if (!g.root) { return; }
       var opts = g.root.querySelectorAll('.opt');
       for (var i = 0; i < opts.length; i++) {
         var on = opts[i].getAttribute('data-value') === g.value;
@@ -21,6 +35,7 @@
       }
     });
     el.menuBest.textContent = NS.ui.highScore();
+    applyPadMode();
     if (handlers.onSelect) { handlers.onSelect(); }
   }
 
@@ -42,6 +57,8 @@
         over: $('overlay-over'),
         selSize: $('sel-size'),
         selMode: $('sel-mode'),
+        selPad: $('sel-pad'),
+        touchHint: $('touch-hint'),
         menuBest: $('menu-best'),
         btnStart: $('btn-start'),
         btnAgain: $('btn-again'),
@@ -57,7 +74,11 @@
         overRecord: $('over-record')
       };
 
-      [el.selSize, el.selMode].forEach(function (root) {
+      // Remember the arrow-button preference across sessions.
+      selection.pad = NS.storage.get(NS.storage.padKey, 'SHOW') === 'HIDE' ? 'HIDE' : 'SHOW';
+
+      [el.selSize, el.selMode, el.selPad].forEach(function (root) {
+        if (!root) { return; }
         root.addEventListener('click', function (e) {
           var btn = e.target.closest('.opt');
           if (!btn) { return; }

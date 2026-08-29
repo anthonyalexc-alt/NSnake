@@ -6,6 +6,7 @@
   NS.TICK_MS = 111;            // ~9 moves per second, fixed for every map size
   NS.COLOR_EVERY = 5;          // snake picks a new neon hue every N points
   NS.THEME_EVERY = 10;         // map theme advances every N points
+  NS.GOLDEN_SCORE = 100;       // golden map + diamond snake, for the rest of the run
   NS.START_LENGTH = 3;
 
   NS.MAP_SIZES = {
@@ -51,6 +52,7 @@
       return 'neonsnake.hi.' + sizeKey + '.' + modeKey;
     },
     muteKey: 'neonsnake.muted',
+    padKey: 'neonsnake.pad',
     // localStorage throws in some privacy modes - never let that break the game.
     get: function (key, fallback) {
       try {

@@ -17,11 +17,13 @@ Open `index.html` in a browser. That's it.
 | `M` | Mute |
 | `Esc` | Back to menu |
 
-On a touch device: **swipe the board** to steer — a long drag can chain several
-turns without lifting your finger — or use the on-screen D-pad, whose centre
-button pauses. Tapping the **Sound** readout in the HUD mutes. The pad and the
-swipe handler appear only on `(pointer: coarse)` devices, so a mouse drag on a
-desktop never steers the snake.
+On a touch device: **swipe to steer** — anywhere in the layout, not just the
+board — and a long drag can chain several turns without lifting your finger.
+The on-screen arrow buttons are optional: the start screen has an **Arrow
+buttons: Show / Hide** choice, remembered across sessions, and hiding them gives
+the space back to the board. The centre button of the pad pauses. Tapping the
+**Sound** readout in the HUD mutes. Touch steering activates only on
+`(pointer: coarse)` devices, so a mouse drag on a desktop never steers.
 
 ### Adding it to a phone home screen
 
@@ -58,16 +60,29 @@ same space on screen either way, so a larger map means smaller cells and longer 
 
 - **Every 5 points** the snake picks a new neon hue. It never picks a colour close to
   the current map's apple, so the snake can't camouflage against its own food.
-- **Every 10 points** the map changes, cycling Techy → Grassy → Blocky → Techy. This is
-  cosmetic: the grid, the speed, and the collision rules stay identical. The accent
-  colour bleeds out of the canvas into the page chrome, so the whole page shifts with it.
+- **Every 10 points** the map changes. This is cosmetic: the grid, the speed, and the
+  collision rules stay identical. The accent colour bleeds out of the canvas into the
+  page chrome, so the whole page shifts with it.
+- **At 100 points** the **Golden** map takes over *permanently* and the snake turns to
+  **diamond** — icy white with a prismatic sheen travelling down its body — for the rest
+  of the run. Hue changes stop; it stays diamond.
 
 | Score | Map |
 | --- | --- |
-| 0–9 | Techy — circuit traces and solder nodes, magenta chip apple |
+| 0–9 | Techy — circuit traces and solder nodes, magenta chip |
 | 10–19 | Grassy — neon blades and pollen, red apple |
-| 20–29 | Blocky — pastel-neon confetti tiles, cyan cube apple |
-| 30+ | cycles back to Techy |
+| 20–29 | Blocky — pastel-neon confetti tiles, cyan cube |
+| 30–39 | Medieval — castle masonry and wall torches, crimson gem |
+| 40–49 | Sky — stars and drifting cloud, a small sun |
+| 50–59 | War Map — topographic contours and advance routes, target reticle |
+| 60–69 | Tree Trunks — bark grain and knots, teal berry |
+| 70–79 | Western — desert dusk and cacti, sheriff's star |
+| 80–89 | Candy — diagonal stripes and sprinkles, mint sweet |
+| 90–99 | wraps back to Techy |
+| **100+** | **Golden** — radiant gold rays and sparkles, ruby. Diamond snake, permanent |
+
+Nine maps cover ten 10-point bands before 100, so 90–99 repeats Techy. Moving the
+golden level to 90, or adding a tenth map, would close that gap.
 
 High scores are saved per map size **and** wall mode, so a Wrap score never outranks a
 Solid one. They live in `localStorage` on your own machine.
