@@ -2,7 +2,7 @@
    Backgrounds are painted once to an offscreen canvas and blitted each frame.
 
    Nine themes cycle every 10 points. At GOLDEN_SCORE the golden map takes over
-   permanently and the snake turns to diamond. */
+   permanently and the snake turns gold. */
 (function (NS) {
   'use strict';
 
@@ -61,6 +61,72 @@
     ctx.fillStyle = 'rgba(255,255,255,0.85)';
     ctx.beginPath();
     ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  function polyPath(ctx, cx, cy, r, sides, rotation) {
+    var rot = rotation || 0;
+    ctx.beginPath();
+    for (var i = 0; i < sides; i++) {
+      var a = rot + (Math.PI * 2 / sides) * i;
+      var x = cx + Math.cos(a) * r, y = cy + Math.sin(a) * r;
+      if (i === 0) { ctx.moveTo(x, y); } else { ctx.lineTo(x, y); }
+    }
+    ctx.closePath();
+  }
+
+  // A brilliant cut seen from above: girdle, table, and the facets between.
+  function drawBrilliant(ctx, cx, cy, r, pulse) {
+    var rot = Math.PI / 8;
+
+    // Dark setting, so a white stone still has an edge on a bright floor.
+    polyPath(ctx, cx, cy, r * 1.2, 8, rot);
+    ctx.fillStyle = 'rgba(40,24,4,0.5)';
+    ctx.fill();
+
+    ctx.save();
+    ctx.shadowColor = 'rgba(210,245,255,0.95)';
+    ctx.shadowBlur = r * (1.6 + pulse * 0.8);
+
+    var body = ctx.createLinearGradient(cx - r, cy - r, cx + r, cy + r);
+    body.addColorStop(0, '#ffffff');
+    body.addColorStop(0.38, '#d8f2ff');
+    body.addColorStop(0.62, '#a8dcf6');
+    body.addColorStop(1, '#e9f9ff');
+    ctx.fillStyle = body;
+    polyPath(ctx, cx, cy, r, 8, rot);
+    ctx.fill();
+    ctx.restore();
+
+    // Crown facets: girdle points joined to the table.
+    var table = r * 0.46;
+    ctx.strokeStyle = 'rgba(120,180,215,0.55)';
+    ctx.lineWidth = Math.max(0.6, r * 0.07);
+    ctx.beginPath();
+    for (var i = 0; i < 8; i++) {
+      var a = rot + (Math.PI / 4) * i;
+      ctx.moveTo(cx + Math.cos(a) * table, cy + Math.sin(a) * table);
+      ctx.lineTo(cx + Math.cos(a) * r, cy + Math.sin(a) * r);
+    }
+    ctx.stroke();
+
+    // Table.
+    polyPath(ctx, cx, cy, table, 8, rot);
+    ctx.fillStyle = 'rgba(255,255,255,0.92)';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(150,205,235,0.7)';
+    ctx.lineWidth = Math.max(0.6, r * 0.06);
+    ctx.stroke();
+
+    // Girdle.
+    polyPath(ctx, cx, cy, r, 8, rot);
+    ctx.strokeStyle = 'rgba(28,18,4,0.55)';
+    ctx.lineWidth = Math.max(0.8, r * 0.09);
+    ctx.stroke();
+
+    // Sparkle.
+    ctx.fillStyle = 'rgba(255,255,255,0.95)';
+    starPath(ctx, cx - r * 0.28, cy - r * 0.3, 4, r * (0.34 + pulse * 0.1), r * 0.07);
     ctx.fill();
   }
 
@@ -386,90 +452,192 @@
     key: 'MEDIEVAL', name: 'Medieval',
     ground: '#0d0a14', accent: '#ffb43d',
     accentSoft: 'rgba(255,180,61,0.35)', accentDim: 'rgba(255,180,61,0.12)',
-    foodHue: 350,
+    foodHue: 145,          // emerald - crimson would vanish on the red runner
 
+    // The great hall of a keep, seen from above: flagstone floor, a runner down
+    // the middle, columns, light falling from the windows, and the walls of the
+    // room around the edge hung with heraldry.
     paint: function (ctx, px, cells) {
       var rnd = NS.seededRandom(cells * 4391 + 61);
+      var band = px * 0.075;                 // thickness of the surrounding wall
 
       ctx.fillStyle = this.ground;
       ctx.fillRect(0, 0, px, px);
 
-      // Castle masonry: offset courses of stone.
-      var rows = Math.max(8, Math.round(cells * 0.7));
-      var rowH = px / rows;
-      var stoneW = rowH * 2.1;
-      ctx.lineWidth = Math.max(1, px * 0.0016);
-      for (var r = 0; r < rows; r++) {
-        var offset = (r % 2) * stoneW * 0.5;
-        for (var x = -stoneW; x < px + stoneW; x += stoneW) {
-          var sx = x + offset, sy = r * rowH;
-          var tone = 0.03 + rnd() * 0.055;
-          ctx.fillStyle = 'rgba(196,204,232,' + tone + ')';
-          ctx.fillRect(sx + 1, sy + 1, stoneW - 2, rowH - 2);
-          ctx.strokeStyle = 'rgba(150,165,205,0.10)';
-          ctx.strokeRect(sx + 1, sy + 1, stoneW - 2, rowH - 2);
-        }
-      }
+      /* ---- flagstone floor ---- */
+      var fs = px / 8;
+      for (var gy = 0; gy < 8; gy++) {
+        for (var gx = 0; gx < 8; gx++) {
+          var jx = (rnd() - 0.5) * fs * 0.05;
+          var jy = (rnd() - 0.5) * fs * 0.05;
+          var tone = 0.045 + rnd() * 0.05;
+          ctx.fillStyle = 'rgba(198,206,236,' + tone + ')';
+          ctx.fillRect(gx * fs + 2 + jx, gy * fs + 2 + jy, fs - 4, fs - 4);
 
-      // Wall furniture on a jittered 4x4 grid of slots, so shields, crossed
-      // swords, banners and torches spread out instead of clumping.
-      var SLOTS = 4;
-      var slot = px / SLOTS;
-      var order = [];
-      for (var i = 0; i < SLOTS * SLOTS; i++) { order.push(i); }
-      for (var s = order.length - 1; s > 0; s--) {      // shuffle
-        var j = Math.floor(rnd() * (s + 1));
-        var tmp = order[s]; order[s] = order[j]; order[j] = tmp;
-      }
-
-      var heraldry = [
-        ['rgba(150,32,42,0.92)', 'rgba(240,205,120,0.95)'],   // gules & or
-        ['rgba(28,58,120,0.92)', 'rgba(226,232,244,0.95)'],   // azure & argent
-        ['rgba(32,86,52,0.92)', 'rgba(240,205,120,0.95)'],    // vert & or
-        ['rgba(64,36,96,0.92)', 'rgba(240,205,120,0.95)']     // purpure & or
-      ];
-
-      var count = Math.min(order.length, 11);
-      for (var k = 0; k < count; k++) {
-        var idx = order[k];
-        var cx = (idx % SLOTS) * slot + slot * (0.28 + rnd() * 0.44);
-        var cy = Math.floor(idx / SLOTS) * slot + slot * (0.28 + rnd() * 0.44);
-        var pal = heraldry[Math.floor(rnd() * heraldry.length)];
-        var kind = k % 4;                    // even spread of the four kinds
-
-        if (kind === 0) {
-          var sw = slot * (0.34 + rnd() * 0.10);
-          drawShield(ctx, cx, cy, sw, sw * 1.18, pal[0], pal[1], Math.floor(rnd() * 3));
-        } else if (kind === 1) {
-          var len = slot * (0.62 + rnd() * 0.16);
-          drawSword(ctx, cx, cy, len, -0.66);
-          drawSword(ctx, cx, cy, len, 0.66);
-          // Small shield over the crossing point.
-          drawShield(ctx, cx, cy + len * 0.04, len * 0.30, len * 0.35, pal[0], pal[1], 1);
-        } else if (kind === 2) {
-          var bw = slot * (0.26 + rnd() * 0.08);
-          drawBanner(ctx, cx, cy - slot * 0.30, bw, bw * 2.0, pal[0], pal[1]);
-        } else {
-          // Torch: bracket, flame and the pool of light it throws.
-          var flame = ctx.createRadialGradient(cx, cy, 0, cx, cy, px * 0.14);
-          flame.addColorStop(0, 'rgba(255,190,90,0.44)');
-          flame.addColorStop(0.4, 'rgba(255,120,40,0.17)');
-          flame.addColorStop(1, 'rgba(255,90,20,0)');
-          ctx.fillStyle = flame;
-          ctx.fillRect(cx - px * 0.14, cy - px * 0.14, px * 0.28, px * 0.28);
-
-          ctx.fillStyle = 'rgba(70,48,26,0.9)';
-          ctx.fillRect(cx - px * 0.006, cy, px * 0.012, px * 0.045);
-          withGlow(ctx, 'rgba(255,170,60,0.95)', px * 0.035, function () {
-            ctx.fillStyle = 'rgba(255,225,165,0.97)';
+          // Worn patches and cracks.
+          if (rnd() > 0.62) {
+            ctx.fillStyle = 'rgba(0,0,0,0.16)';
             ctx.beginPath();
-            ctx.ellipse(cx, cy - px * 0.006, px * 0.009, px * 0.017, 0, 0, Math.PI * 2);
+            ctx.ellipse(gx * fs + fs * (0.3 + rnd() * 0.4), gy * fs + fs * (0.3 + rnd() * 0.4),
+              fs * (0.10 + rnd() * 0.16), fs * (0.07 + rnd() * 0.12), rnd() * Math.PI, 0, Math.PI * 2);
             ctx.fill();
-          });
+          }
+          if (rnd() > 0.82) {
+            ctx.strokeStyle = 'rgba(0,0,0,0.30)';
+            ctx.lineWidth = Math.max(1, px * 0.0016);
+            ctx.beginPath();
+            var sx0 = gx * fs + fs * rnd(), sy0 = gy * fs + fs * rnd();
+            ctx.moveTo(sx0, sy0);
+            ctx.lineTo(sx0 + fs * (rnd() - 0.5) * 0.6, sy0 + fs * (rnd() - 0.5) * 0.6);
+            ctx.stroke();
+          }
         }
       }
 
-      vignette(ctx, px, 0.58);
+      /* ---- runner down the centre of the hall ---- */
+      var cw = px * 0.23, cx0 = px / 2 - cw / 2;
+      ctx.fillStyle = 'rgba(104,18,26,0.72)';
+      ctx.fillRect(cx0, band, cw, px - band * 2);
+      ctx.fillStyle = 'rgba(150,30,38,0.20)';
+      ctx.fillRect(cx0 + cw * 0.14, band, cw * 0.72, px - band * 2);
+
+      ctx.fillStyle = 'rgba(206,168,86,0.65)';
+      ctx.fillRect(cx0 + cw * 0.06, band, cw * 0.028, px - band * 2);
+      ctx.fillRect(cx0 + cw * 0.912, band, cw * 0.028, px - band * 2);
+
+      ctx.strokeStyle = 'rgba(206,168,86,0.42)';
+      ctx.lineWidth = Math.max(1, px * 0.002);
+      for (var my = band + px * 0.06; my < px - band; my += px * 0.115) {
+        diamondPath(ctx, px / 2, my, cw * 0.15, px * 0.026);
+        ctx.stroke();
+      }
+
+      /* ---- light from the windows ---- */
+      for (var w = 0; w < 3; w++) {
+        var lx = px * (0.10 + w * 0.33);
+        var g = ctx.createLinearGradient(lx, 0, lx + px * 0.26, px);
+        g.addColorStop(0, 'rgba(255,240,196,0.17)');
+        g.addColorStop(0.6, 'rgba(255,226,160,0.07)');
+        g.addColorStop(1, 'rgba(255,215,140,0)');
+        ctx.fillStyle = g;
+        ctx.beginPath();
+        ctx.moveTo(lx, 0);
+        ctx.lineTo(lx + px * 0.115, 0);
+        ctx.lineTo(lx + px * 0.30, px);
+        ctx.lineTo(lx + px * 0.155, px);
+        ctx.closePath();
+        ctx.fill();
+      }
+
+      /* ---- columns ---- */
+      var colR = px * 0.036;
+      [[0.20, 0.26], [0.80, 0.26], [0.20, 0.74], [0.80, 0.74]].forEach(function (p) {
+        var cx = px * p[0], cy = px * p[1];
+        ctx.fillStyle = 'rgba(0,0,0,0.45)';
+        ctx.beginPath();
+        ctx.ellipse(cx + colR * 0.30, cy + colR * 0.34, colR * 1.16, colR * 1.06, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = 'rgba(150,158,190,0.16)';
+        ctx.beginPath();
+        ctx.arc(cx, cy, colR * 1.24, 0, Math.PI * 2);
+        ctx.fill();
+
+        var lit = ctx.createRadialGradient(cx - colR * 0.4, cy - colR * 0.45, colR * 0.1, cx, cy, colR);
+        lit.addColorStop(0, 'rgba(226,232,252,0.60)');
+        lit.addColorStop(0.65, 'rgba(150,158,190,0.34)');
+        lit.addColorStop(1, 'rgba(60,64,88,0.42)');
+        ctx.fillStyle = lit;
+        ctx.beginPath();
+        ctx.arc(cx, cy, colR, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.strokeStyle = 'rgba(230,236,255,0.14)';
+        ctx.lineWidth = Math.max(1, px * 0.0018);
+        for (var f = 0; f < 7; f++) {
+          var a = (Math.PI * 2 / 7) * f;
+          ctx.beginPath();
+          ctx.moveTo(cx + Math.cos(a) * colR * 0.42, cy + Math.sin(a) * colR * 0.42);
+          ctx.lineTo(cx + Math.cos(a) * colR * 0.95, cy + Math.sin(a) * colR * 0.95);
+          ctx.stroke();
+        }
+      });
+
+      /* ---- the walls of the room ---- */
+      ctx.fillStyle = 'rgba(7,5,11,0.94)';
+      ctx.fillRect(0, 0, px, band);
+      ctx.fillRect(0, px - band, px, band);
+      ctx.fillRect(0, 0, band, px);
+      ctx.fillRect(px - band, 0, band, px);
+
+      var bh = band * 0.5;                    // masonry courses on the wall band
+      ctx.strokeStyle = 'rgba(176,188,224,0.13)';
+      ctx.lineWidth = Math.max(1, px * 0.0015);
+      for (var t = 0; t < px; t += bh * 1.9) {
+        ctx.strokeRect(t, 1, bh * 1.9, bh);
+        ctx.strokeRect(t + bh * 0.95, band - bh - 1, bh * 1.9, bh);
+        ctx.strokeRect(t, px - band + 1, bh * 1.9, bh);
+        ctx.strokeRect(t + bh * 0.95, px - bh - 1, bh * 1.9, bh);
+        ctx.strokeRect(1, t, bh, bh * 1.9);
+        ctx.strokeRect(band - bh - 1, t + bh * 0.95, bh, bh * 1.9);
+        ctx.strokeRect(px - band + 1, t, bh, bh * 1.9);
+        ctx.strokeRect(px - bh - 1, t + bh * 0.95, bh, bh * 1.9);
+      }
+
+      ctx.strokeStyle = 'rgba(198,208,242,0.20)';
+      ctx.lineWidth = Math.max(1, px * 0.0022);
+      ctx.strokeRect(band, band, px - band * 2, px - band * 2);
+
+      /* ---- heraldry hung on those walls ---- */
+      var heraldry = [
+        ['rgba(150,32,42,0.94)', 'rgba(240,205,120,0.96)'],   // gules & or
+        ['rgba(28,58,120,0.94)', 'rgba(226,232,244,0.96)'],   // azure & argent
+        ['rgba(32,86,52,0.94)', 'rgba(240,205,120,0.96)'],    // vert & or
+        ['rgba(64,36,96,0.94)', 'rgba(240,205,120,0.96)']     // purpure & or
+      ];
+      var u = px * 0.115;                     // nominal size of a wall piece
+
+      function torch(cx, cy) {
+        var flame = ctx.createRadialGradient(cx, cy, 0, cx, cy, px * 0.15);
+        flame.addColorStop(0, 'rgba(255,192,92,0.46)');
+        flame.addColorStop(0.4, 'rgba(255,122,40,0.18)');
+        flame.addColorStop(1, 'rgba(255,90,20,0)');
+        ctx.fillStyle = flame;
+        ctx.fillRect(cx - px * 0.15, cy - px * 0.15, px * 0.30, px * 0.30);
+        ctx.fillStyle = 'rgba(70,48,26,0.92)';
+        ctx.fillRect(cx - px * 0.006, cy, px * 0.012, px * 0.042);
+        withGlow(ctx, 'rgba(255,170,60,0.95)', px * 0.035, function () {
+          ctx.fillStyle = 'rgba(255,228,170,0.97)';
+          ctx.beginPath();
+          ctx.ellipse(cx, cy - px * 0.005, px * 0.009, px * 0.017, 0, 0, Math.PI * 2);
+          ctx.fill();
+        });
+      }
+
+      // Top wall: banners between crossed swords. Side walls: shields.
+      // Corners: torches, so the room is lit from its four corners.
+      var top = band * 0.78;
+      drawBanner(ctx, px * 0.30, top - u * 0.16, u * 0.52, u * 1.5, heraldry[0][0], heraldry[0][1]);
+      drawBanner(ctx, px * 0.70, top - u * 0.16, u * 0.52, u * 1.5, heraldry[1][0], heraldry[1][1]);
+
+      drawSword(ctx, px * 0.5, top + u * 0.30, u * 1.05, -0.62);
+      drawSword(ctx, px * 0.5, top + u * 0.30, u * 1.05, 0.62);
+      drawShield(ctx, px * 0.5, top + u * 0.34, u * 0.46, u * 0.55, heraldry[2][0], heraldry[2][1], 1);
+
+      drawShield(ctx, band * 0.86, px * 0.38, u * 0.60, u * 0.71, heraldry[1][0], heraldry[1][1], 0);
+      drawShield(ctx, band * 0.86, px * 0.66, u * 0.60, u * 0.71, heraldry[3][0], heraldry[3][1], 2);
+      drawShield(ctx, px - band * 0.86, px * 0.38, u * 0.60, u * 0.71, heraldry[2][0], heraldry[2][1], 2);
+      drawShield(ctx, px - band * 0.86, px * 0.66, u * 0.60, u * 0.71, heraldry[0][0], heraldry[0][1], 0);
+
+      drawBanner(ctx, px * 0.36, px - band * 1.05, u * 0.46, u * 1.15, heraldry[3][0], heraldry[3][1]);
+      drawBanner(ctx, px * 0.64, px - band * 1.05, u * 0.46, u * 1.15, heraldry[2][0], heraldry[2][1]);
+
+      torch(band * 0.9, band * 0.9);
+      torch(px - band * 0.9, band * 0.9);
+      torch(band * 0.9, px - band * 0.9);
+      torch(px - band * 0.9, px - band * 0.9);
+
+      vignette(ctx, px, 0.55);
     },
 
     // A crimson gem set in a shield.
@@ -942,7 +1110,7 @@
     ground: '#e7bd44', pageBg: '#1a1204',
     accent: '#ffd24a',
     accentSoft: 'rgba(255,210,74,0.45)', accentDim: 'rgba(255,210,74,0.18)',
-    foodHue: 350,
+    foodHue: 195,          // icy: the apple here is a cut diamond
 
     paint: function (ctx, px, cells) {
       var rnd = NS.seededRandom(cells * 1597 + 211);
@@ -1037,32 +1205,10 @@
       vignette(ctx, px, 0.30);
     },
 
-    // A ruby. On a bright slab a glow alone would wash out, so it gets a dark
-    // setting around it to hold its edge.
+    // A cut diamond. On a bright slab a glow alone would wash out, so the stone
+    // sits in a dark setting.
     drawFood: function (ctx, x, y, cell, pulse) {
-      var cx = x + cell / 2, cy = y + cell / 2;
-      var w = cell * (0.30 + pulse * 0.04), h = cell * (0.36 + pulse * 0.04);
-      var col = NS.hsl(this.foodHue, 95, 48);
-
-      diamondPath(ctx, cx, cy, w * 1.22, h * 1.18);
-      ctx.fillStyle = 'rgba(58,26,4,0.55)';
-      ctx.fill();
-
-      withGlow(ctx, col, cell * (0.9 + pulse * 0.5), function () {
-        ctx.fillStyle = col;
-        diamondPath(ctx, cx, cy, w, h);
-        ctx.fill();
-      });
-
-      diamondPath(ctx, cx, cy, w, h);
-      ctx.strokeStyle = 'rgba(30,10,2,0.7)';
-      ctx.lineWidth = Math.max(1, cell * 0.05);
-      ctx.stroke();
-
-      ctx.fillStyle = 'rgba(255,190,200,0.65)';
-      diamondPath(ctx, cx, cy - h * 0.2, w * 0.42, h * 0.36);
-      ctx.fill();
-      glint(ctx, cx - w * 0.2, cy - h * 0.32, cell * 0.05);
+      drawBrilliant(ctx, x + cell / 2, y + cell / 2, cell * (0.34 + pulse * 0.04), pulse);
     }
   };
 

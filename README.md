@@ -72,14 +72,14 @@ same space on screen either way, so a larger map means smaller cells and longer 
 | 0–9 | Techy — circuit traces and solder nodes, magenta chip |
 | 10–19 | Grassy — neon blades and pollen, red apple |
 | 20–29 | Blocky — pastel-neon confetti tiles, cyan cube |
-| 30–39 | Medieval — castle wall hung with heraldic shields, crossed swords, banners and torches |
+| 30–39 | Medieval — a castle great hall: flagstones, a runner, columns, window light, walls hung with heraldry |
 | 40–49 | Sky — stars and drifting cloud, a small sun |
 | 50–59 | War Map — topographic contours and advance routes, target reticle |
 | 60–69 | Tree Trunks — bark grain and knots, teal berry |
 | 70–79 | Western — desert dusk and cacti, sheriff's star |
 | 80–89 | Candy — diagonal stripes and sprinkles, mint sweet |
 | 90–99 | wraps back to Techy |
-| **100+** | **Golden** — a glimmering slab of gold bullion, ruby apple. Gold snake, permanent |
+| **100+** | **Golden** — a glimmering slab of gold bullion, cut diamonds for apples. Gold snake, permanent |
 
 Nine maps cover ten 10-point bands before 100, so 90–99 repeats Techy. Moving the
 golden level to 90, or adding a tenth map, would close that gap.
@@ -119,8 +119,11 @@ Scripts are classic `<script>` tags rather than ES modules, which is what lets
 - **The Golden board is light, so it carries its own page colour.** A theme sets the
   page background from `pageBg` where it has one, falling back to `ground`; without that
   split, the bright gold board would wash out the light HUD text. On that level the
-  snake and apple also take a dark rim, since a glow alone does not hold an edge against
-  a bright surface.
+  snake and the diamonds also take a dark rim, since a glow alone does not hold an edge
+  against a bright surface.
+- **A map's apple colour is chosen against that map's own floor.** Medieval's apple is an
+  emerald, not the obvious crimson: the hall has a deep red runner down the middle, and a
+  red gem sitting on it would be near-invisible.
 - **The board is sized off the space left over** on touch layouts
   (`min(96vw, 100dvh - reserve)`) rather than a fixed fraction of the viewport, so
   the D-pad can never be pushed off the bottom of a short phone screen.
