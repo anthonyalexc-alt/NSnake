@@ -65,11 +65,11 @@
 
   function drawSnake(cell, time) {
     var body = game.body;
-    var diamond = NS.isGolden(game.score);
-    // Diamond drops the hue entirely: an icy white body under a wide cold glow,
-    // with the facet colour shifting along the body and over time.
-    var glow = diamond ? 'hsl(195,100%,72%)' : NS.hsl(hue, 100, 58);
-    var core = diamond ? '#ffffff' : NS.hsl(hue, 100, 84);
+    var goldenSnake = NS.isGolden(game.score);
+    // On the golden level the snake is solid gold. The board is bright gold too,
+    // so it gets a dark bronze rim to hold its shape against the slab.
+    var glow = goldenSnake ? 'hsl(38,100%,52%)' : NS.hsl(hue, 100, 58);
+    var core = goldenSnake ? 'hsl(46,100%,70%)' : NS.hsl(hue, 100, 84);
     var pad = cell * 0.09;
     var size = cell - pad * 2;
     var radius = Math.max(1, cell * 0.28);
@@ -78,7 +78,7 @@
     // One fill for the whole body means one shadow render, not one per segment.
     ctx.save();
     ctx.shadowColor = glow;
-    ctx.shadowBlur = cell * (diamond ? 1.15 : 0.85);
+    ctx.shadowBlur = cell * (goldenSnake ? 1.0 : 0.85);
     ctx.fillStyle = glow;
     ctx.beginPath();
     for (i = 0; i < body.length; i++) {
@@ -88,6 +88,18 @@
     ctx.fill();
     ctx.restore();
 
+    // Dark bronze rim, only where the ground is as bright as the snake.
+    if (goldenSnake) {
+      ctx.strokeStyle = 'rgba(52,28,2,0.85)';
+      ctx.lineWidth = Math.max(1, cell * 0.1);
+      ctx.beginPath();
+      for (i = 0; i < body.length; i++) {
+        seg = body[i];
+        roundRectPath(ctx, seg.x * cell + pad, seg.y * cell + pad, size, size, radius);
+      }
+      ctx.stroke();
+    }
+
     // Bright core, tapering slightly toward the tail.
     ctx.fillStyle = core;
     for (i = 0; i < body.length; i++) {
@@ -96,9 +108,9 @@
       var inset = pad + cell * (0.1 + t * 0.09);
       var s = cell - inset * 2;
       if (s <= 0) { continue; }
-      if (diamond) {
-        // Prismatic sheen travelling down the body.
-        ctx.fillStyle = NS.hsl(185 + ((i * 13 + time / 26) % 95), 100, 90);
+      if (goldenSnake) {
+        // Polished-metal shimmer travelling down the body.
+        ctx.fillStyle = NS.hsl(44, 100, 62 + 22 * (0.5 + 0.5 * Math.sin(i * 0.7 - time / 260)));
       }
       ctx.beginPath();
       roundRectPath(ctx, seg.x * cell + inset, seg.y * cell + inset, s, s, Math.max(1, s * 0.3));
@@ -206,10 +218,12 @@
     NS.audio.eat(score);
 
     // Theme first, so the new snake hue is chosen against the new apple colour.
-    if (score % NS.THEME_EVERY === 0 && syncTheme(false)) {
+    // Asking on every apple rather than only on multiples of THEME_EVERY: it is
+    // a comparison, and it cannot miss a boundary.
+    if (syncTheme(false)) {
       ensureBackground(game.cells);
       NS.ui.flash();
-      if (score === NS.GOLDEN_SCORE) { NS.audio.win(); } else { NS.audio.themeChange(); }
+      if (NS.isGolden(score)) { NS.audio.win(); } else { NS.audio.themeChange(); }
     }
     // Once the snake turns to diamond it keeps that look - no more hue changes.
     if (score % NS.COLOR_EVERY === 0 && !NS.isGolden(score)) {

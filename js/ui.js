@@ -161,7 +161,9 @@
       root.setProperty('--accent', theme.accent);
       root.setProperty('--accent-soft', theme.accentSoft);
       root.setProperty('--accent-dim', theme.accentDim);
-      root.setProperty('--bg', theme.ground);
+      // A theme whose board is light (Golden) supplies its own dark page colour;
+      // the HUD text would be unreadable on the board colour itself.
+      root.setProperty('--bg', theme.pageBg || theme.ground);
       this.setThemeName(theme.name);
     },
 

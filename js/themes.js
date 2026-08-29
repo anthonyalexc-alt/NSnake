@@ -64,6 +64,120 @@
     ctx.fill();
   }
 
+  /* ---- heraldry, for the Medieval wall ---- */
+
+  function shieldPath(ctx, cx, cy, w, h) {
+    ctx.beginPath();
+    ctx.moveTo(cx - w / 2, cy - h / 2);
+    ctx.lineTo(cx + w / 2, cy - h / 2);
+    ctx.lineTo(cx + w / 2, cy + h * 0.08);
+    ctx.quadraticCurveTo(cx + w / 2, cy + h / 2, cx, cy + h / 2);
+    ctx.quadraticCurveTo(cx - w / 2, cy + h / 2, cx - w / 2, cy + h * 0.08);
+    ctx.closePath();
+  }
+
+  function drawShield(ctx, cx, cy, w, h, main, charge, device) {
+    ctx.save();
+    shieldPath(ctx, cx, cy, w, h);
+    ctx.fillStyle = main;
+    ctx.fill();
+
+    // The device is clipped to the shield so it never bleeds past the edge.
+    ctx.save();
+    ctx.clip();
+    ctx.fillStyle = charge;
+    if (device === 0) {                       // per pale
+      ctx.fillRect(cx, cy - h / 2, w / 2, h);
+    } else if (device === 1) {                // cross
+      ctx.fillRect(cx - w * 0.13, cy - h / 2, w * 0.26, h);
+      ctx.fillRect(cx - w / 2, cy - h * 0.16, w, h * 0.24);
+    } else {                                  // chevron
+      ctx.beginPath();
+      ctx.moveTo(cx - w / 2, cy + h * 0.26);
+      ctx.lineTo(cx, cy - h * 0.10);
+      ctx.lineTo(cx + w / 2, cy + h * 0.26);
+      ctx.lineTo(cx + w / 2, cy + h * 0.46);
+      ctx.lineTo(cx, cy + h * 0.10);
+      ctx.lineTo(cx - w / 2, cy + h * 0.46);
+      ctx.closePath();
+      ctx.fill();
+    }
+    ctx.restore();
+
+    // Boss and a lit metal rim.
+    ctx.fillStyle = 'rgba(255,210,130,0.8)';
+    ctx.beginPath();
+    ctx.arc(cx, cy - h * 0.02, w * 0.09, 0, Math.PI * 2);
+    ctx.fill();
+
+    shieldPath(ctx, cx, cy, w, h);
+    ctx.strokeStyle = 'rgba(255,205,125,0.8)';
+    ctx.lineWidth = Math.max(1, w * 0.075);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawSword(ctx, cx, cy, len, angle) {
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(angle);
+    var bw = len * 0.055;
+
+    var steel = ctx.createLinearGradient(-bw, 0, bw, 0);
+    steel.addColorStop(0, 'rgba(120,140,168,0.95)');
+    steel.addColorStop(0.45, 'rgba(228,242,255,0.98)');
+    steel.addColorStop(1, 'rgba(110,130,158,0.95)');
+    ctx.fillStyle = steel;
+    ctx.beginPath();
+    ctx.moveTo(-bw, -len * 0.10);
+    ctx.lineTo(bw, -len * 0.10);
+    ctx.lineTo(bw, len * 0.40);
+    ctx.lineTo(0, len * 0.50);
+    ctx.lineTo(-bw, len * 0.40);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.fillStyle = 'rgba(255,200,95,0.92)';
+    ctx.fillRect(-len * 0.13, -len * 0.145, len * 0.26, len * 0.05);
+    ctx.fillStyle = 'rgba(72,42,20,0.95)';
+    ctx.fillRect(-bw * 0.85, -len * 0.33, bw * 1.7, len * 0.19);
+    ctx.beginPath();
+    ctx.arc(0, -len * 0.355, len * 0.045, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(255,200,95,0.95)';
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function drawBanner(ctx, cx, top, w, h, main, charge) {
+    // Rod with finials.
+    ctx.strokeStyle = 'rgba(196,166,116,0.85)';
+    ctx.lineWidth = Math.max(1, w * 0.09);
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(cx - w * 0.62, top);
+    ctx.lineTo(cx + w * 0.62, top);
+    ctx.stroke();
+
+    // Cloth with a swallowtail hem.
+    ctx.beginPath();
+    ctx.moveTo(cx - w / 2, top);
+    ctx.lineTo(cx + w / 2, top);
+    ctx.lineTo(cx + w / 2, top + h);
+    ctx.lineTo(cx, top + h * 0.76);
+    ctx.lineTo(cx - w / 2, top + h);
+    ctx.closePath();
+    ctx.fillStyle = main;
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255,205,125,0.45)';
+    ctx.lineWidth = Math.max(1, w * 0.05);
+    ctx.stroke();
+
+    // Charge.
+    ctx.fillStyle = charge;
+    ctx.fillRect(cx - w * 0.10, top + h * 0.18, w * 0.20, h * 0.34);
+    ctx.fillRect(cx - w * 0.26, top + h * 0.28, w * 0.52, h * 0.14);
+  }
+
   /* ---------------- 1. Techy ---------------- */
 
   var techy = {
@@ -289,35 +403,73 @@
         var offset = (r % 2) * stoneW * 0.5;
         for (var x = -stoneW; x < px + stoneW; x += stoneW) {
           var sx = x + offset, sy = r * rowH;
-          var tone = 0.03 + rnd() * 0.05;
-          ctx.fillStyle = 'rgba(190,200,230,' + tone + ')';
+          var tone = 0.03 + rnd() * 0.055;
+          ctx.fillStyle = 'rgba(196,204,232,' + tone + ')';
           ctx.fillRect(sx + 1, sy + 1, stoneW - 2, rowH - 2);
           ctx.strokeStyle = 'rgba(150,165,205,0.10)';
           ctx.strokeRect(sx + 1, sy + 1, stoneW - 2, rowH - 2);
         }
       }
 
-      // Wall torches.
-      var torches = Math.max(4, Math.round(cells * 0.24));
-      for (var i = 0; i < torches; i++) {
-        var tx = px * (0.08 + rnd() * 0.84);
-        var ty = px * (0.08 + rnd() * 0.84);
-        var flame = ctx.createRadialGradient(tx, ty, 0, tx, ty, px * 0.13);
-        flame.addColorStop(0, 'rgba(255,190,90,0.42)');
-        flame.addColorStop(0.4, 'rgba(255,120,40,0.16)');
-        flame.addColorStop(1, 'rgba(255,90,20,0)');
-        ctx.fillStyle = flame;
-        ctx.fillRect(tx - px * 0.13, ty - px * 0.13, px * 0.26, px * 0.26);
-
-        withGlow(ctx, 'rgba(255,170,60,0.9)', px * 0.03, function () {
-          ctx.fillStyle = 'rgba(255,215,150,0.95)';
-          ctx.beginPath();
-          ctx.ellipse(tx, ty, px * 0.006, px * 0.011, 0, 0, Math.PI * 2);
-          ctx.fill();
-        });
+      // Wall furniture on a jittered 4x4 grid of slots, so shields, crossed
+      // swords, banners and torches spread out instead of clumping.
+      var SLOTS = 4;
+      var slot = px / SLOTS;
+      var order = [];
+      for (var i = 0; i < SLOTS * SLOTS; i++) { order.push(i); }
+      for (var s = order.length - 1; s > 0; s--) {      // shuffle
+        var j = Math.floor(rnd() * (s + 1));
+        var tmp = order[s]; order[s] = order[j]; order[j] = tmp;
       }
 
-      vignette(ctx, px, 0.62);
+      var heraldry = [
+        ['rgba(150,32,42,0.92)', 'rgba(240,205,120,0.95)'],   // gules & or
+        ['rgba(28,58,120,0.92)', 'rgba(226,232,244,0.95)'],   // azure & argent
+        ['rgba(32,86,52,0.92)', 'rgba(240,205,120,0.95)'],    // vert & or
+        ['rgba(64,36,96,0.92)', 'rgba(240,205,120,0.95)']     // purpure & or
+      ];
+
+      var count = Math.min(order.length, 11);
+      for (var k = 0; k < count; k++) {
+        var idx = order[k];
+        var cx = (idx % SLOTS) * slot + slot * (0.28 + rnd() * 0.44);
+        var cy = Math.floor(idx / SLOTS) * slot + slot * (0.28 + rnd() * 0.44);
+        var pal = heraldry[Math.floor(rnd() * heraldry.length)];
+        var kind = k % 4;                    // even spread of the four kinds
+
+        if (kind === 0) {
+          var sw = slot * (0.34 + rnd() * 0.10);
+          drawShield(ctx, cx, cy, sw, sw * 1.18, pal[0], pal[1], Math.floor(rnd() * 3));
+        } else if (kind === 1) {
+          var len = slot * (0.62 + rnd() * 0.16);
+          drawSword(ctx, cx, cy, len, -0.66);
+          drawSword(ctx, cx, cy, len, 0.66);
+          // Small shield over the crossing point.
+          drawShield(ctx, cx, cy + len * 0.04, len * 0.30, len * 0.35, pal[0], pal[1], 1);
+        } else if (kind === 2) {
+          var bw = slot * (0.26 + rnd() * 0.08);
+          drawBanner(ctx, cx, cy - slot * 0.30, bw, bw * 2.0, pal[0], pal[1]);
+        } else {
+          // Torch: bracket, flame and the pool of light it throws.
+          var flame = ctx.createRadialGradient(cx, cy, 0, cx, cy, px * 0.14);
+          flame.addColorStop(0, 'rgba(255,190,90,0.44)');
+          flame.addColorStop(0.4, 'rgba(255,120,40,0.17)');
+          flame.addColorStop(1, 'rgba(255,90,20,0)');
+          ctx.fillStyle = flame;
+          ctx.fillRect(cx - px * 0.14, cy - px * 0.14, px * 0.28, px * 0.28);
+
+          ctx.fillStyle = 'rgba(70,48,26,0.9)';
+          ctx.fillRect(cx - px * 0.006, cy, px * 0.012, px * 0.045);
+          withGlow(ctx, 'rgba(255,170,60,0.95)', px * 0.035, function () {
+            ctx.fillStyle = 'rgba(255,225,165,0.97)';
+            ctx.beginPath();
+            ctx.ellipse(cx, cy - px * 0.006, px * 0.009, px * 0.017, 0, 0, Math.PI * 2);
+            ctx.fill();
+          });
+        }
+      }
+
+      vignette(ctx, px, 0.58);
     },
 
     // A crimson gem set in a shield.
@@ -785,67 +937,129 @@
 
   var golden = {
     key: 'GOLDEN', name: 'Golden',
-    ground: '#1a1204', accent: '#ffd24a',
+    // The board is a bright slab of gold. The page chrome stays dark, or the
+    // light HUD text would be unreadable against it.
+    ground: '#e7bd44', pageBg: '#1a1204',
+    accent: '#ffd24a',
     accentSoft: 'rgba(255,210,74,0.45)', accentDim: 'rgba(255,210,74,0.18)',
     foodHue: 350,
 
     paint: function (ctx, px, cells) {
       var rnd = NS.seededRandom(cells * 1597 + 211);
 
-      var g = ctx.createRadialGradient(px / 2, px / 2, 0, px / 2, px / 2, px * 0.75);
-      g.addColorStop(0, '#3a2a06');
-      g.addColorStop(0.6, '#201604');
-      g.addColorStop(1, '#100b02');
+      // Polished gold, lit from the top left.
+      var g = ctx.createLinearGradient(0, 0, px, px);
+      g.addColorStop(0, '#fbeaa4');
+      g.addColorStop(0.30, '#f0cf62');
+      g.addColorStop(0.58, '#d9a92e');
+      g.addColorStop(0.80, '#c8951f');
+      g.addColorStop(1, '#efd070');
       ctx.fillStyle = g;
       ctx.fillRect(0, 0, px, px);
 
-      // Radiant rays from the centre.
+      // Bullion blocks with bevelled edges - the "standing on a gold block" read.
+      var BL = 4;
+      var bs = px / BL;
+      for (var by = 0; by < BL; by++) {
+        for (var bx = 0; bx < BL; bx++) {
+          var x = bx * bs, y = by * bs;
+          var bev = bs * 0.07;
+
+          ctx.fillStyle = 'rgba(255,244,190,' + (0.05 + rnd() * 0.07) + ')';
+          ctx.fillRect(x, y, bs, bs);
+
+          // Lit top and left edges.
+          ctx.fillStyle = 'rgba(255,250,215,0.5)';
+          ctx.beginPath();
+          ctx.moveTo(x, y); ctx.lineTo(x + bs, y);
+          ctx.lineTo(x + bs - bev, y + bev); ctx.lineTo(x + bev, y + bev);
+          ctx.closePath(); ctx.fill();
+          ctx.beginPath();
+          ctx.moveTo(x, y); ctx.lineTo(x + bev, y + bev);
+          ctx.lineTo(x + bev, y + bs - bev); ctx.lineTo(x, y + bs);
+          ctx.closePath(); ctx.fill();
+
+          // Shaded bottom and right edges.
+          ctx.fillStyle = 'rgba(120,76,6,0.34)';
+          ctx.beginPath();
+          ctx.moveTo(x + bs, y); ctx.lineTo(x + bs, y + bs);
+          ctx.lineTo(x + bs - bev, y + bs - bev); ctx.lineTo(x + bs - bev, y + bev);
+          ctx.closePath(); ctx.fill();
+          ctx.beginPath();
+          ctx.moveTo(x, y + bs); ctx.lineTo(x + bev, y + bs - bev);
+          ctx.lineTo(x + bs - bev, y + bs - bev); ctx.lineTo(x + bs, y + bs);
+          ctx.closePath(); ctx.fill();
+        }
+      }
+
+      // Brushed-metal streaks.
       ctx.save();
-      ctx.translate(px / 2, px / 2);
-      var rays = 24;
-      for (var i = 0; i < rays; i++) {
-        ctx.rotate((Math.PI * 2) / rays);
-        var grd = ctx.createLinearGradient(0, 0, px * 0.75, 0);
-        grd.addColorStop(0, 'rgba(255,215,90,0.16)');
-        grd.addColorStop(1, 'rgba(255,190,60,0)');
-        ctx.fillStyle = grd;
+      ctx.globalAlpha = 0.10;
+      for (var b = 0; b < 90; b++) {
+        var sy2 = rnd() * px;
+        ctx.strokeStyle = rnd() > 0.5 ? '#fff6cf' : '#a97c12';
+        ctx.lineWidth = px * (0.0008 + rnd() * 0.0018);
         ctx.beginPath();
-        ctx.moveTo(0, 0);
-        ctx.lineTo(px * 0.78, -px * 0.028);
-        ctx.lineTo(px * 0.78, px * 0.028);
-        ctx.closePath();
-        ctx.fill();
+        ctx.moveTo(rnd() * px * 0.4, sy2);
+        ctx.lineTo(rnd() * px * 0.6 + px * 0.4, sy2 + (rnd() - 0.5) * px * 0.02);
+        ctx.stroke();
       }
       ctx.restore();
 
-      gridLines(ctx, px, cells, 'rgba(255,215,110,0.09)', 1);
+      // Broad specular sweep across the slab.
+      ctx.save();
+      ctx.translate(px / 2, px / 2);
+      ctx.rotate(-Math.PI / 5);
+      var sheen = ctx.createLinearGradient(0, -px * 0.5, 0, px * 0.5);
+      sheen.addColorStop(0, 'rgba(255,255,255,0)');
+      sheen.addColorStop(0.45, 'rgba(255,255,240,0.30)');
+      sheen.addColorStop(0.55, 'rgba(255,255,240,0.30)');
+      sheen.addColorStop(1, 'rgba(255,255,255,0)');
+      ctx.fillStyle = sheen;
+      ctx.fillRect(-px, -px * 0.30, px * 2, px * 0.60);
+      ctx.restore();
 
-      // Sparkles.
-      var sparks = Math.max(10, Math.round(cells * 1.1));
-      for (var s = 0; s < sparks; s++) {
+      gridLines(ctx, px, cells, 'rgba(120,80,10,0.10)', 1);
+
+      // Glimmer - sparse, so it never competes with the apple for attention.
+      var sparks = Math.max(7, Math.round(cells * 0.45));
+      for (var s2 = 0; s2 < sparks; s2++) {
         var sx = rnd() * px, sy = rnd() * px;
-        var sr = px * (0.006 + rnd() * 0.012);
-        withGlow(ctx, 'rgba(255,230,150,0.95)', px * 0.03, function () {
-          ctx.fillStyle = 'rgba(255,245,205,0.9)';
-          starPath(ctx, sx, sy, 4, sr, sr * 0.28);
+        var sr = px * (0.005 + rnd() * 0.011);
+        withGlow(ctx, 'rgba(255,255,235,0.8)', px * 0.022, function () {
+          ctx.fillStyle = 'rgba(255,255,245,0.75)';
+          starPath(ctx, sx, sy, 4, sr, sr * 0.24);
           ctx.fill();
         });
       }
 
-      vignette(ctx, px, 0.5);
+      // Gentle darkening at the rim so the bright slab still has edges.
+      vignette(ctx, px, 0.30);
     },
 
-    // A ruby, so the food still reads against all the gold.
+    // A ruby. On a bright slab a glow alone would wash out, so it gets a dark
+    // setting around it to hold its edge.
     drawFood: function (ctx, x, y, cell, pulse) {
       var cx = x + cell / 2, cy = y + cell / 2;
       var w = cell * (0.30 + pulse * 0.04), h = cell * (0.36 + pulse * 0.04);
-      var col = NS.hsl(this.foodHue, 95, 55);
-      withGlow(ctx, col, cell * (1.2 + pulse), function () {
+      var col = NS.hsl(this.foodHue, 95, 48);
+
+      diamondPath(ctx, cx, cy, w * 1.22, h * 1.18);
+      ctx.fillStyle = 'rgba(58,26,4,0.55)';
+      ctx.fill();
+
+      withGlow(ctx, col, cell * (0.9 + pulse * 0.5), function () {
         ctx.fillStyle = col;
         diamondPath(ctx, cx, cy, w, h);
         ctx.fill();
       });
-      ctx.fillStyle = 'rgba(255,190,200,0.6)';
+
+      diamondPath(ctx, cx, cy, w, h);
+      ctx.strokeStyle = 'rgba(30,10,2,0.7)';
+      ctx.lineWidth = Math.max(1, cell * 0.05);
+      ctx.stroke();
+
+      ctx.fillStyle = 'rgba(255,190,200,0.65)';
       diamondPath(ctx, cx, cy - h * 0.2, w * 0.42, h * 0.36);
       ctx.fill();
       glint(ctx, cx - w * 0.2, cy - h * 0.32, cell * 0.05);
