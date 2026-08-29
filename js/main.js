@@ -52,10 +52,12 @@
 
   /* ---------------- colour ---------------- */
 
-  // Never pick a hue that reads as the current theme's apple.
+  // Never pick a hue that reads as the current theme's apple. 40 degrees was too
+  // tight - a hue-100 snake next to Medieval's hue-145 emerald both just read
+  // "green" - so the exclusion is wider.
   function pickHue() {
     var pool = NS.SNAKE_HUES.filter(function (h) {
-      return h !== hue && NS.hueGap(h, theme.foodHue) > 40;
+      return h !== hue && NS.hueGap(h, theme.foodHue) > 60;
     });
     if (!pool.length) { pool = NS.SNAKE_HUES.filter(function (h) { return h !== hue; }); }
     hue = pool[Math.floor(Math.random() * pool.length)];
