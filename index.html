@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Neon Snake</title>
+<meta name="description" content="A neon take on the classic Nokia snake game.">
+<link rel="stylesheet" href="css/style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%2305070d'/><rect x='6' y='14' width='16' height='5' rx='2' fill='%2300e5ff'/><circle cx='25' cy='11' r='3' fill='%23ff2fd0'/></svg>">
+</head>
+<body>
+<div class="wrap">
+
+  <header class="hud" id="hud">
+    <div class="hud-item"><span class="hud-label">Score</span><span class="hud-value" id="hud-score">0</span></div>
+    <div class="hud-item"><span class="hud-label">Best</span><span class="hud-value" id="hud-best">0</span></div>
+    <div class="hud-item"><span class="hud-label">Map</span><span class="hud-value" id="hud-theme">Techy</span></div>
+    <div class="hud-item"><span class="hud-label">Grid</span><span class="hud-value" id="hud-grid">25 &times; 25</span></div>
+    <div class="hud-item"><span class="hud-label">Walls</span><span class="hud-value" id="hud-walls">Solid</span></div>
+    <div class="hud-item hud-mute"><span class="hud-label">Sound</span><span class="hud-value" id="hud-mute">On</span></div>
+  </header>
+
+  <div class="stage">
+    <canvas id="game" width="640" height="640" aria-label="Snake game board"></canvas>
+
+    <div class="overlay" id="overlay-menu">
+      <div class="panel">
+        <h1 class="logo">NEON<span>SNAKE</span></h1>
+
+        <div class="selector" id="sel-size" data-group="size">
+          <div class="selector-label">Map size</div>
+          <div class="opts">
+            <button type="button" class="opt" data-value="S">Small<em>15 &times; 15</em></button>
+            <button type="button" class="opt is-on" data-value="M">Medium<em>25 &times; 25</em></button>
+            <button type="button" class="opt" data-value="L">Large<em>35 &times; 35</em></button>
+          </div>
+        </div>
+
+        <div class="selector" id="sel-mode" data-group="mode">
+          <div class="selector-label">Wall mode</div>
+          <div class="opts">
+            <button type="button" class="opt is-on" data-value="SOLID">Solid Walls<em>edge kills</em></button>
+            <button type="button" class="opt" data-value="WRAP">Wrap Around<em>pass through</em></button>
+          </div>
+        </div>
+
+        <p class="best-line">Best on this setup &middot; <b id="menu-best">0</b></p>
+        <button type="button" class="start" id="btn-start">START</button>
+        <p class="hint">&larr;&uarr;&rarr;&darr; or WASD to steer &middot; Enter to start</p>
+      </div>
+    </div>
+
+    <div class="overlay hidden" id="overlay-pause">
+      <div class="panel">
+        <h2 class="banner">PAUSED</h2>
+        <p class="hint">Space or P to resume &middot; R to restart &middot; Esc for menu</p>
+      </div>
+    </div>
+
+    <div class="overlay hidden" id="overlay-over">
+      <div class="panel">
+        <h2 class="banner banner-dead">GAME OVER</h2>
+        <p class="record hidden" id="over-record">NEW RECORD</p>
+        <div class="scores">
+          <div><span class="hud-label">Score</span><b id="over-score">0</b></div>
+          <div><span class="hud-label">Best</span><b id="over-best">0</b></div>
+        </div>
+        <div class="row">
+          <button type="button" class="start" id="btn-again">RESTART</button>
+          <button type="button" class="ghost" id="btn-menu">MENU</button>
+        </div>
+        <p class="hint">R to restart &middot; Esc for menu</p>
+      </div>
+    </div>
+  </div>
+
+  <footer class="keys">
+    <span><b>&larr;&uarr;&rarr;&darr;</b> / <b>WASD</b> steer</span>
+    <span><b>Space</b> / <b>P</b> pause</span>
+    <span><b>R</b> restart</span>
+    <span><b>M</b> mute</span>
+    <span><b>Esc</b> menu</span>
+  </footer>
+
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/themes.js"></script>
+<script src="js/snake.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>

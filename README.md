@@ -1,7 +1,93 @@
-# snake_game
+# Neon Snake
 
-A snake game.
+The Nokia snake mechanics, rendered in neon. Vanilla JavaScript on an HTML5 canvas —
+no build step, no dependencies, no framework.
 
-## Status
+## Play
 
-Repository scaffold — no game code yet.
+Open `index.html` in a browser. That's it.
+
+## Controls
+
+| Key | Action |
+| --- | --- |
+| `←` `↑` `→` `↓` or `WASD` | Steer |
+| `Space` / `P` | Pause |
+| `R` | Restart |
+| `M` | Mute |
+| `Esc` | Back to menu |
+
+## Rules
+
+- One point per apple. The snake grows by one segment each time.
+- Fixed speed of ~9 moves per second on every map — difficulty comes from length alone.
+- Running into yourself always ends the run.
+
+## Choices made before the run starts
+
+**Map size** changes how many cells the board is divided into. The board occupies the
+same space on screen either way, so a larger map means smaller cells and longer runs.
+
+| Size | Grid |
+| --- | --- |
+| Small | 15 × 15 |
+| Medium | 25 × 25 |
+| Large | 35 × 35 |
+
+**Wall mode** decides what the edge of the board does.
+
+| Mode | Behaviour |
+| --- | --- |
+| Solid Walls | Hitting an edge ends the run (classic Nokia) |
+| Wrap Around | The snake reappears on the opposite side |
+
+## What changes as you score
+
+- **Every 5 points** the snake picks a new neon hue. It never picks a colour close to
+  the current map's apple, so the snake can't camouflage against its own food.
+- **Every 10 points** the map changes, cycling Techy → Grassy → Blocky → Techy. This is
+  cosmetic: the grid, the speed, and the collision rules stay identical. The accent
+  colour bleeds out of the canvas into the page chrome, so the whole page shifts with it.
+
+| Score | Map |
+| --- | --- |
+| 0–9 | Techy — circuit traces and solder nodes, magenta chip apple |
+| 10–19 | Grassy — neon blades and pollen, red apple |
+| 20–29 | Blocky — pastel-neon confetti tiles, cyan cube apple |
+| 30+ | cycles back to Techy |
+
+High scores are saved per map size **and** wall mode, so a Wrap score never outranks a
+Solid one. They live in `localStorage` on your own machine.
+
+## Layout
+
+```
+index.html        markup, HUD, overlays
+css/style.css     neon shell; accent colours are CSS custom properties re-tinted per theme
+js/config.js      sizes, speed, cadence, storage helpers
+js/audio.js       Web Audio blips (no audio files)
+js/themes.js      the three maps: background painters and apple shapes
+js/snake.js       pure game state - movement, growth, food, collision. No DOM.
+js/ui.js          screens, HUD, menu selectors, high scores
+js/main.js        boot, fixed-timestep loop, input, rendering
+```
+
+Scripts are classic `<script>` tags rather than ES modules, which is what lets
+`index.html` run straight off the filesystem with no server.
+
+## Notes on the implementation
+
+- **Turns are queued, not applied instantly.** Two keys pressed inside a single tick
+  would otherwise let the snake reverse into itself. Each turn is validated against the
+  last *applied* direction.
+- **The background is painted once** to an offscreen canvas per theme and blitted each
+  frame, so per-frame cost is flat no matter how detailed a map is.
+- **The glow is one fill for the whole snake**, not one per segment — a single shadow
+  render instead of dozens.
+- **Food spawns from a list of free cells**, not by rejection sampling, so it stays
+  instant even when the snake covers most of a small board.
+
+## Deploying
+
+Static files, no build. On Vercel the project needs no build command and an output
+directory of `.`; pushes to `main` deploy automatically.
