@@ -87,6 +87,10 @@ golden level to 90, or adding a tenth map, would close that gap.
 High scores are saved per map size **and** wall mode, so a Wrap score never outranks a
 Solid one. They live in `localStorage` on your own machine.
 
+Once a run passes your record, the **Best** readout climbs along with your score for the
+rest of that run, so you can watch the record being set. Nothing is written to storage
+until you actually die — the save happens at the end of the run, not on every apple.
+
 ## Layout
 
 ```

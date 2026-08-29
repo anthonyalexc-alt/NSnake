@@ -4,6 +4,12 @@
 
   function $(id) { return document.getElementById(id); }
 
+  function pop(node) {
+    node.classList.remove('bump');
+    void node.offsetWidth;         // force reflow so the animation replays
+    node.classList.add('bump');
+  }
+
   var el = {};
   var selection = { size: 'M', mode: 'SOLID', pad: 'SHOW' };
   var handlers = {};
@@ -141,14 +147,13 @@
 
     setScore: function (n, bump) {
       el.score.textContent = n;
-      if (bump) {
-        el.score.classList.remove('bump');
-        void el.score.offsetWidth;   // force reflow so the animation replays
-        el.score.classList.add('bump');
-      }
+      if (bump) { pop(el.score); }
     },
 
-    setBest: function (n) { el.best.textContent = n; },
+    setBest: function (n, bump) {
+      el.best.textContent = n;
+      if (bump) { pop(el.best); }
+    },
     setGrid: function (cells) { el.grid.textContent = cells + ' × ' + cells; },
     setWalls: function (label) { el.walls.textContent = label; },
     setThemeName: function (name) { el.theme.textContent = name; },

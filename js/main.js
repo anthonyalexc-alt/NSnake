@@ -219,6 +219,10 @@
     NS.ui.setScore(score, true);
     NS.audio.eat(score);
 
+    // Once you are past your record, Best climbs with you. `best` itself stays
+    // put so endRun can still tell this was a record - the save happens there.
+    if (score > best) { NS.ui.setBest(score, true); }
+
     // Theme first, so the new snake hue is chosen against the new apple colour.
     // Asking on every apple rather than only on multiples of THEME_EVERY: it is
     // a comparison, and it cannot miss a boundary.
