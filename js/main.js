@@ -136,40 +136,6 @@
     });
   }
 
-  // Hard scatters static blocks. One shared look tinted with the theme accent,
-  // so every map gets obstacles that read as "wall" without bespoke art.
-  function drawBlocks(cell) {
-    if (!game.blocks || !game.blocks.size) { return; }
-    var cells = game.cells;
-    var pad = cell * 0.05;
-    var size = cell - pad * 2;
-    var radius = Math.max(1, cell * 0.16);
-
-    function path() {
-      ctx.beginPath();
-      game.blocks.forEach(function (id) {
-        roundRectPath(ctx, (id % cells) * cell + pad,
-          Math.floor(id / cells) * cell + pad, size, size, radius);
-      });
-    }
-
-    ctx.save();
-    ctx.shadowColor = theme.accent;
-    ctx.shadowBlur = cell * 0.45;
-    ctx.fillStyle = 'rgba(9,9,14,0.93)';
-    path();
-    ctx.fill();
-    ctx.restore();
-
-    ctx.save();
-    ctx.globalAlpha = 0.8;
-    ctx.strokeStyle = theme.accent;
-    ctx.lineWidth = Math.max(1, cell * 0.08);
-    path();
-    ctx.stroke();
-    ctx.restore();
-  }
-
   function render(time) {
     var cells = game ? game.cells : NS.ui.cells();
     var cell = PX / cells;
@@ -179,8 +145,6 @@
     ctx.drawImage(bg, 0, 0, PX, PX);
 
     if (!game) { return; }
-
-    drawBlocks(cell);
 
     if (game.food) {
       var pulse = 0.5 + 0.5 * Math.sin(time / 260);
@@ -206,7 +170,7 @@
     var diff = NS.DIFFICULTIES[sel.diff] || NS.DIFFICULTIES.NORMAL;
 
     tickMs = diff.tickMs;
-    game = NS.game.create(cells, sel.mode, NS.blockCount(diff.key, cells));
+    game = NS.game.create(cells, sel.mode);
     best = NS.ui.highScore();
 
     syncTheme(true);
@@ -268,7 +232,7 @@
       NS.ui.flash();
       if (NS.isGolden(score)) { NS.audio.win(); } else { NS.audio.themeChange(); }
     }
-    // Once the snake turns to diamond it keeps that look - no more hue changes.
+    // Once the snake turns gold it keeps that look - no more hue changes.
     if (score % NS.COLOR_EVERY === 0 && !NS.isGolden(score)) {
       pickHue();
       if (score % NS.THEME_EVERY !== 0) { NS.audio.colorChange(); }

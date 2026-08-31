@@ -35,7 +35,8 @@ PNGs rather than the inline SVG used for the browser tab.
 ## Rules
 
 - One point per apple. The snake grows by one segment each time.
-- Fixed speed of ~9 moves per second on every map — difficulty comes from length alone.
+- Speed is fixed for the whole run, set by the difficulty you pick. Beyond that, the
+  only thing that makes a run harder is your own length.
 - Running into yourself always ends the run.
 
 ## Choices made before the run starts
@@ -56,14 +57,13 @@ same space on screen either way, so a larger map means smaller cells and longer 
 | Solid Walls | Hitting an edge ends the run (classic Nokia) |
 | Wrap Around | The snake reappears on the opposite side |
 
-**Difficulty** sets the speed, and on Hard also litters the board with static
-blocks that kill on contact.
+**Difficulty** sets the speed. The board is always clear.
 
-| Difficulty | Speed | Board |
-| --- | --- | --- |
-| Easy | ~6 moves/sec | clear |
-| Normal | ~9 moves/sec | clear |
-| Hard | ~14 moves/sec | scattered blocks (about `cells × 0.9` of them) |
+| Difficulty | Speed |
+| --- | --- |
+| Easy | ~6 moves/sec |
+| Normal | ~9 moves/sec |
+| Hard | ~14 moves/sec |
 
 Normal is exactly the game as it was before difficulty existed, so it stays the
 default. High scores are kept per difficulty as well as per size and wall mode —
@@ -113,7 +113,7 @@ site.webmanifest  home-screen install metadata
 icons/            app icons (PNG, generated - see below)
 js/config.js      sizes, speed, cadence, storage helpers
 js/audio.js       Web Audio blips (no audio files)
-js/themes.js      the three maps: background painters and apple shapes
+js/themes.js      the ten maps: background painters and apple shapes
 js/snake.js       pure game state - movement, growth, food, collision. No DOM.
 js/ui.js          screens, HUD, menu selectors, high scores
 js/main.js        boot, fixed-timestep loop, input, swipe/pad handling, rendering
@@ -133,12 +133,6 @@ Scripts are classic `<script>` tags rather than ES modules, which is what lets
   render instead of dozens.
 - **Food spawns from a list of free cells**, not by rejection sampling, so it stays
   instant even when the snake covers most of a small board.
-- **Hard's blocks are validated before the board ships.** Blocks go into the same
-  `occupied` set as the snake, so collision and food placement need no extra checks.
-  A candidate layout is only accepted if a flood fill proves every free cell is still
-  reachable from every other — otherwise a block wall could strand the apple somewhere
-  the snake can never reach. The snake's own cells and an eight-cell run-up ahead of it
-  are always kept clear.
 - **The Golden board is light, so it carries its own page colour.** A theme sets the
   page background from `pageBg` where it has one, falling back to `ground`; without that
   split, the bright gold board would wash out the light HUD text. On that level the
