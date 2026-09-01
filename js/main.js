@@ -160,6 +160,9 @@
     ctx.drawImage(bg, 0, 0, PX, PX);
     drawGrid(cell, cells);
 
+    // Anything a map wants animated rather than baked into its backdrop.
+    if (theme.drawOverlay) { theme.drawOverlay(ctx, PX, cells, time); }
+
     if (!game) { return; }
 
     if (game.food) {

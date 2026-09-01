@@ -2094,20 +2094,51 @@
 
       gridLines(ctx, px, cells, 'rgba(120,80,10,0.10)', 1);
 
-      // Glimmer - sparse, so it never competes with the apple for attention.
-      var sparks = Math.max(7, Math.round(cells * 0.45));
-      for (var s2 = 0; s2 < sparks; s2++) {
-        var sx = rnd() * px, sy = rnd() * px;
-        var sr = px * (0.005 + rnd() * 0.011);
-        withGlow(ctx, 'rgba(255,255,235,0.8)', px * 0.022, function () {
-          ctx.fillStyle = 'rgba(255,255,245,0.75)';
-          starPath(ctx, sx, sy, 4, sr, sr * 0.24);
-          ctx.fill();
-        });
-      }
+      // The glimmer is not painted here: it is drawn per frame by drawOverlay
+      // so it can twinkle, rather than sitting on the board like a photograph.
 
       // Gentle darkening at the rim so the bright slab still has edges.
       vignette(ctx, px, 0.30);
+    },
+
+    // Twinkle positions are fixed for a given board; only their brightness moves.
+    twinkles: function (px, cells) {
+      var key = px + ':' + cells;
+      if (this._twKey === key) { return this._tw; }
+      var rnd = NS.seededRandom(cells * 811 + 37);
+      var list = [];
+      var n = Math.max(9, Math.round(cells * 0.5));
+      for (var i = 0; i < n; i++) {
+        list.push({
+          x: rnd() * px,
+          y: rnd() * px,
+          r: px * (0.005 + rnd() * 0.012),
+          phase: rnd() * Math.PI * 2,
+          speed: 0.55 + rnd() * 1.15      // each one on its own clock
+        });
+      }
+      this._twKey = key;
+      this._tw = list;
+      return list;
+    },
+
+    drawOverlay: function (ctx, px, cells, time) {
+      var list = this.twinkles(px, cells);
+      ctx.save();
+      ctx.shadowColor = 'rgba(255,255,235,0.9)';
+      ctx.shadowBlur = px * 0.022;
+      ctx.fillStyle = 'rgba(255,255,245,0.9)';
+
+      for (var i = 0; i < list.length; i++) {
+        var t = list[i];
+        var a = 0.5 + 0.5 * Math.sin(time / 1000 * t.speed + t.phase);
+        a *= a;                            // squared, so it lingers dark and flashes bright
+        if (a < 0.03) { continue; }
+        ctx.globalAlpha = a;
+        starPath(ctx, t.x, t.y, 4, t.r * (0.7 + a * 0.5), t.r * 0.24);
+        ctx.fill();
+      }
+      ctx.restore();
     },
 
     // A cut diamond. On a bright slab a glow alone would wash out, so the stone
