@@ -835,88 +835,386 @@
     }
   };
 
-  /* ---------------- 7. Tree Trunks ---------------- */
+  /* ---- deep space ---- */
 
-  var trunks = {
-    key: 'TRUNKS', name: 'Tree Trunks',
-    ground: '#140d07', accent: '#ffab5e',
-    accentSoft: 'rgba(255,171,94,0.35)', accentDim: 'rgba(255,171,94,0.12)',
-    foodHue: 175,
+  function nebulaBloom(ctx, cx, cy, r, inner, outer) {
+    var g = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+    g.addColorStop(0, inner);
+    g.addColorStop(0.45, outer);
+    g.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(cx - r, cy - r, r * 2, r * 2);
+  }
+
+  function starfield(ctx, px, rnd, count) {
+    for (var i = 0; i < count; i++) {
+      var x = rnd() * px, y = rnd() * px;
+      var mag = rnd();
+      var r = px * (0.0009 + mag * mag * 0.0035);
+      var tint = rnd();
+      var col = tint > 0.88 ? 'rgba(255,206,180,' : tint < 0.12 ? 'rgba(186,214,255,' : 'rgba(255,255,255,';
+      ctx.fillStyle = col + (0.25 + mag * 0.7) + ')';
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.fill();
+
+      // The brightest few get diffraction spikes.
+      if (mag > 0.95) {
+        withGlow(ctx, 'rgba(220,236,255,0.9)', px * 0.02, function () {
+          ctx.fillStyle = 'rgba(255,255,255,0.9)';
+          starPath(ctx, x, y, 4, r * 6, r * 0.7);
+          ctx.fill();
+        });
+      }
+    }
+  }
+
+  // Banded gas giant, lit from the upper left, with an optional ring system
+  // drawn in two passes so the near side crosses in front of the planet.
+  function drawPlanet(ctx, cx, cy, r, opt) {
+    var hue = opt.hue, tilt = opt.tilt || -0.42;
+
+    function rings(from, to) {
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.rotate(tilt);
+      [[2.15, 0.09, 0.30], [1.92, 0.13, 0.46], [1.66, 0.07, 0.26], [1.50, 0.10, 0.38]]
+        .forEach(function (band) {
+          ctx.beginPath();
+          ctx.ellipse(0, 0, r * band[0], r * band[0] * 0.30, 0, from, to);
+          ctx.strokeStyle = NS.hsl(hue + 12, 60, 74, band[2]);
+          ctx.lineWidth = r * band[1];
+          ctx.stroke();
+        });
+      ctx.restore();
+    }
+
+    if (opt.ring) { rings(Math.PI, Math.PI * 2); }        // far side, behind
+
+    // Atmospheric halo.
+    var halo = ctx.createRadialGradient(cx, cy, r * 0.9, cx, cy, r * 1.45);
+    halo.addColorStop(0, NS.hsl(hue, 90, 60, 0.34));
+    halo.addColorStop(1, NS.hsl(hue, 90, 60, 0));
+    ctx.fillStyle = halo;
+    ctx.fillRect(cx - r * 1.5, cy - r * 1.5, r * 3, r * 3);
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.clip();
+
+    var body = ctx.createRadialGradient(cx - r * 0.35, cy - r * 0.4, r * 0.1, cx, cy, r * 1.25);
+    body.addColorStop(0, NS.hsl(hue, 70, 62));
+    body.addColorStop(0.55, NS.hsl(hue, 62, 42));
+    body.addColorStop(1, NS.hsl(hue, 60, 16));
+    ctx.fillStyle = body;
+    ctx.fillRect(cx - r, cy - r, r * 2, r * 2);
+
+    // Latitude bands.
+    (opt.bands || [[-0.55, 0.16, 10, 0.30], [-0.18, 0.22, -8, 0.22],
+      [0.22, 0.14, 14, 0.26], [0.55, 0.18, -6, 0.18]]).forEach(function (b) {
+      ctx.fillStyle = NS.hsl(hue + b[2], 66, 58, b[3]);
+      ctx.beginPath();
+      ctx.ellipse(cx, cy + r * b[0], r * 1.05, r * b[1], 0, 0, Math.PI * 2);
+      ctx.fill();
+    });
+
+    if (opt.spot) {                                       // a storm
+      ctx.fillStyle = NS.hsl(hue - 24, 78, 52, 0.55);
+      ctx.beginPath();
+      ctx.ellipse(cx + r * 0.28, cy + r * 0.20, r * 0.26, r * 0.15, 0.3, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Terminator: night creeping in from the lower right.
+    var night = ctx.createRadialGradient(cx - r * 0.45, cy - r * 0.5, r * 0.2, cx, cy, r * 1.5);
+    night.addColorStop(0, 'rgba(0,0,0,0)');
+    night.addColorStop(0.55, 'rgba(2,3,12,0.30)');
+    night.addColorStop(1, 'rgba(2,3,12,0.88)');
+    ctx.fillStyle = night;
+    ctx.fillRect(cx - r, cy - r, r * 2, r * 2);
+    ctx.restore();
+
+    // Lit limb.
+    ctx.strokeStyle = NS.hsl(hue, 95, 82, 0.55);
+    ctx.lineWidth = r * 0.045;
+    ctx.beginPath();
+    ctx.arc(cx, cy, r * 0.985, Math.PI * 0.85, Math.PI * 1.75);
+    ctx.stroke();
+
+    if (opt.ring) { rings(0, Math.PI); }                  // near side, in front
+  }
+
+  function drawMoon(ctx, cx, cy, r) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.clip();
+    var g = ctx.createRadialGradient(cx - r * 0.35, cy - r * 0.4, r * 0.1, cx, cy, r * 1.3);
+    g.addColorStop(0, '#d8dbe6');
+    g.addColorStop(0.6, '#8e94a8');
+    g.addColorStop(1, '#3a3f52');
+    ctx.fillStyle = g;
+    ctx.fillRect(cx - r, cy - r, r * 2, r * 2);
+
+    [[-0.3, -0.2, 0.22], [0.25, 0.1, 0.16], [-0.05, 0.42, 0.13], [0.42, -0.35, 0.10]]
+      .forEach(function (c) {
+        ctx.fillStyle = 'rgba(60,64,80,0.45)';
+        ctx.beginPath();
+        ctx.arc(cx + r * c[0], cy + r * c[1], r * c[2], 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(230,234,245,0.30)';
+        ctx.lineWidth = r * 0.03;
+        ctx.beginPath();
+        ctx.arc(cx + r * c[0], cy + r * c[1], r * c[2], Math.PI * 0.9, Math.PI * 1.8);
+        ctx.stroke();
+      });
+
+    var night = ctx.createRadialGradient(cx - r * 0.4, cy - r * 0.45, r * 0.15, cx, cy, r * 1.45);
+    night.addColorStop(0, 'rgba(0,0,0,0)');
+    night.addColorStop(1, 'rgba(3,4,14,0.85)');
+    ctx.fillStyle = night;
+    ctx.fillRect(cx - r, cy - r, r * 2, r * 2);
+    ctx.restore();
+  }
+
+  // Classic finned rocket, nose up, with a lit porthole and an engine plume.
+  function drawRocket(ctx, x, y, len, angle) {
+    var w = len * 0.30;
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(angle);
+
+    // Plume first, so the hull sits over it.
+    var flame = ctx.createLinearGradient(0, len * 0.30, 0, len * 0.95);
+    flame.addColorStop(0, 'rgba(255,238,170,0.95)');
+    flame.addColorStop(0.35, 'rgba(255,158,54,0.75)');
+    flame.addColorStop(1, 'rgba(255,90,30,0)');
+    withGlow(ctx, 'rgba(255,170,70,0.9)', len * 0.35, function () {
+      ctx.fillStyle = flame;
+      ctx.beginPath();
+      ctx.moveTo(-w * 0.30, len * 0.30);
+      ctx.quadraticCurveTo(-w * 0.16, len * 0.72, 0, len * 0.95);
+      ctx.quadraticCurveTo(w * 0.16, len * 0.72, w * 0.30, len * 0.30);
+      ctx.closePath();
+      ctx.fill();
+    });
+
+    // Fins.
+    ctx.fillStyle = '#c8434a';
+    [-1, 1].forEach(function (s) {
+      ctx.beginPath();
+      ctx.moveTo(s * w * 0.42, len * 0.06);
+      ctx.quadraticCurveTo(s * w * 0.95, len * 0.24, s * w * 0.80, len * 0.34);
+      ctx.lineTo(s * w * 0.40, len * 0.30);
+      ctx.closePath();
+      ctx.fill();
+    });
+
+    // Hull.
+    var hull = ctx.createLinearGradient(-w / 2, 0, w / 2, 0);
+    hull.addColorStop(0, '#7d8598');
+    hull.addColorStop(0.35, '#eef2f8');
+    hull.addColorStop(1, '#9aa3b4');
+    ctx.fillStyle = hull;
+    ctx.beginPath();
+    ctx.moveTo(0, -len * 0.50);
+    ctx.quadraticCurveTo(w * 0.5, -len * 0.16, w * 0.44, len * 0.30);
+    ctx.lineTo(-w * 0.44, len * 0.30);
+    ctx.quadraticCurveTo(-w * 0.5, -len * 0.16, 0, -len * 0.50);
+    ctx.closePath();
+    ctx.fill();
+
+    // Nose cone and engine collar.
+    ctx.fillStyle = '#c8434a';
+    ctx.beginPath();
+    ctx.moveTo(0, -len * 0.50);
+    ctx.quadraticCurveTo(w * 0.34, -len * 0.28, w * 0.30, -len * 0.16);
+    ctx.lineTo(-w * 0.30, -len * 0.16);
+    ctx.quadraticCurveTo(-w * 0.34, -len * 0.28, 0, -len * 0.50);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = '#5d6577';
+    ctx.fillRect(-w * 0.46, len * 0.24, w * 0.92, len * 0.07);
+
+    // Porthole.
+    withGlow(ctx, 'rgba(120,220,255,0.95)', len * 0.12, function () {
+      ctx.fillStyle = '#9fe4ff';
+      ctx.beginPath();
+      ctx.arc(0, -len * 0.02, w * 0.20, 0, Math.PI * 2);
+      ctx.fill();
+    });
+    ctx.strokeStyle = '#5d6577';
+    ctx.lineWidth = len * 0.022;
+    ctx.beginPath();
+    ctx.arc(0, -len * 0.02, w * 0.20, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawSatellite(ctx, x, y, s, angle) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(angle);
+    ctx.fillStyle = '#aeb6c6';
+    ctx.fillRect(-s * 0.30, -s * 0.22, s * 0.60, s * 0.44);
+    ctx.fillStyle = '#6f7789';
+    ctx.fillRect(-s * 0.30, -s * 0.22, s * 0.60, s * 0.10);
+
+    [-1, 1].forEach(function (d) {
+      ctx.fillStyle = '#2b4c9a';
+      ctx.fillRect(d > 0 ? s * 0.34 : -s * 1.06, -s * 0.20, s * 0.72, s * 0.40);
+      ctx.strokeStyle = 'rgba(150,200,255,0.55)';
+      ctx.lineWidth = s * 0.03;
+      for (var i = 1; i < 4; i++) {
+        var gx = (d > 0 ? s * 0.34 : -s * 1.06) + (s * 0.72 / 4) * i;
+        ctx.beginPath();
+        ctx.moveTo(gx, -s * 0.20); ctx.lineTo(gx, s * 0.20);
+        ctx.stroke();
+      }
+      ctx.strokeStyle = '#8d94a6';
+      ctx.lineWidth = s * 0.05;
+      ctx.beginPath();
+      ctx.moveTo(d * s * 0.30, 0); ctx.lineTo(d * s * 0.34, 0);
+      ctx.stroke();
+    });
+
+    withGlow(ctx, 'rgba(255,120,120,0.9)', s * 0.3, function () {
+      ctx.fillStyle = '#ff8a8a';
+      ctx.beginPath();
+      ctx.arc(0, -s * 0.30, s * 0.05, 0, Math.PI * 2);
+      ctx.fill();
+    });
+    ctx.restore();
+  }
+
+  function drawComet(ctx, x, y, len, angle) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(angle);
+    var tail = ctx.createLinearGradient(0, 0, -len, 0);
+    tail.addColorStop(0, 'rgba(190,235,255,0.75)');
+    tail.addColorStop(0.5, 'rgba(140,190,255,0.22)');
+    tail.addColorStop(1, 'rgba(120,170,255,0)');
+    ctx.fillStyle = tail;
+    ctx.beginPath();
+    ctx.moveTo(0, -len * 0.045);
+    ctx.quadraticCurveTo(-len * 0.5, -len * 0.10, -len, -len * 0.02);
+    ctx.quadraticCurveTo(-len * 0.5, len * 0.10, 0, len * 0.045);
+    ctx.closePath();
+    ctx.fill();
+    withGlow(ctx, 'rgba(200,240,255,0.95)', len * 0.16, function () {
+      ctx.fillStyle = '#e8f7ff';
+      ctx.beginPath();
+      ctx.arc(0, 0, len * 0.05, 0, Math.PI * 2);
+      ctx.fill();
+    });
+    ctx.restore();
+  }
+
+  function drawAsteroid(ctx, cx, cy, r, rnd) {
+    ctx.beginPath();
+    for (var i = 0; i < 9; i++) {
+      var a = (Math.PI * 2 / 9) * i;
+      var rr = r * (0.72 + rnd() * 0.5);
+      var px2 = cx + Math.cos(a) * rr, py2 = cy + Math.sin(a) * rr;
+      if (i === 0) { ctx.moveTo(px2, py2); } else { ctx.lineTo(px2, py2); }
+    }
+    ctx.closePath();
+    var g = ctx.createLinearGradient(cx - r, cy - r, cx + r, cy + r);
+    g.addColorStop(0, '#8b8fa0');
+    g.addColorStop(1, '#33374a');
+    ctx.fillStyle = g;
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(210,220,240,0.25)';
+    ctx.lineWidth = r * 0.10;
+    ctx.stroke();
+  }
+
+  /* ---------------- 7. Space ---------------- */
+
+  var space = {
+    key: 'SPACE', name: 'Space',
+    ground: '#04030f', accent: '#7cc4ff',
+    accentSoft: 'rgba(124,196,255,0.35)', accentDim: 'rgba(124,196,255,0.12)',
+    foodHue: 95,           // a green energy cell against all that blue and violet
 
     paint: function (ctx, px, cells) {
       var rnd = NS.seededRandom(cells * 2657 + 97);
 
-      ctx.fillStyle = this.ground;
+      // Deep field.
+      var deep = ctx.createRadialGradient(px * 0.6, px * 0.3, 0, px * 0.5, px * 0.5, px * 0.95);
+      deep.addColorStop(0, '#0a0a24');
+      deep.addColorStop(0.55, '#06061a');
+      deep.addColorStop(1, '#02020a');
+      ctx.fillStyle = deep;
       ctx.fillRect(0, 0, px, px);
 
-      // Vertical trunks of varying width.
-      var x = 0;
-      while (x < px) {
-        var w = px * (0.10 + rnd() * 0.11);
-        var shade = 0.05 + rnd() * 0.07;
-        var g = ctx.createLinearGradient(x, 0, x + w, 0);
-        g.addColorStop(0, 'rgba(120,70,35,' + shade * 0.5 + ')');
-        g.addColorStop(0.35, 'rgba(190,120,60,' + shade + ')');
-        g.addColorStop(1, 'rgba(90,50,25,' + shade * 0.6 + ')');
-        ctx.fillStyle = g;
-        ctx.fillRect(x, 0, w, px);
+      // Nebulae.
+      nebulaBloom(ctx, px * 0.22, px * 0.34, px * 0.46,
+        'rgba(126,72,220,0.30)', 'rgba(80,40,160,0.12)');
+      nebulaBloom(ctx, px * 0.74, px * 0.72, px * 0.48,
+        'rgba(32,150,190,0.24)', 'rgba(20,90,140,0.10)');
+      nebulaBloom(ctx, px * 0.52, px * 0.14, px * 0.30,
+        'rgba(210,70,150,0.18)', 'rgba(120,40,110,0.07)');
 
-        // Bark grain: wavy vertical lines within the trunk.
-        var lines = 5 + Math.floor(rnd() * 6);
-        for (var i = 0; i < lines; i++) {
-          var lx = x + w * (0.08 + rnd() * 0.84);
-          var amp = w * (0.03 + rnd() * 0.07);
-          var freq = 2 + rnd() * 4;
-          var ph = rnd() * Math.PI * 2;
-          ctx.strokeStyle = 'rgba(255,180,110,' + (0.05 + rnd() * 0.10) + ')';
-          ctx.lineWidth = Math.max(1, px * (0.0012 + rnd() * 0.002));
-          ctx.beginPath();
-          for (var yy = 0; yy <= px; yy += px / 40) {
-            var xx = lx + Math.sin((yy / px) * Math.PI * freq + ph) * amp;
-            if (yy === 0) { ctx.moveTo(xx, yy); } else { ctx.lineTo(xx, yy); }
-          }
-          ctx.stroke();
-        }
+      // A dust lane through the middle of the field.
+      ctx.save();
+      ctx.translate(px * 0.5, px * 0.5);
+      ctx.rotate(-0.5);
+      var lane = ctx.createLinearGradient(0, -px * 0.20, 0, px * 0.20);
+      lane.addColorStop(0, 'rgba(4,3,16,0)');
+      lane.addColorStop(0.5, 'rgba(4,3,16,0.55)');
+      lane.addColorStop(1, 'rgba(4,3,16,0)');
+      ctx.fillStyle = lane;
+      ctx.fillRect(-px, -px * 0.20, px * 2, px * 0.40);
+      ctx.restore();
 
-        // A knot or two.
-        if (rnd() > 0.55) {
-          var kx = x + w * (0.25 + rnd() * 0.5);
-          var ky = px * (0.1 + rnd() * 0.8);
-          var kr = w * (0.10 + rnd() * 0.10);
-          for (var k = 3; k >= 1; k--) {
-            ctx.strokeStyle = 'rgba(255,190,120,' + (0.05 + k * 0.03) + ')';
-            ctx.lineWidth = Math.max(1, px * 0.0016);
-            ctx.beginPath();
-            ctx.ellipse(kx, ky, kr * k * 0.5, kr * k * 0.75, 0, 0, Math.PI * 2);
-            ctx.stroke();
-          }
-        }
+      starfield(ctx, px, rnd, Math.round(cells * 11));
 
-        // Seam between trunks.
-        ctx.fillStyle = 'rgba(0,0,0,0.35)';
-        ctx.fillRect(x + w - px * 0.004, 0, px * 0.008, px);
-        x += w;
-      }
+      // The showpiece: a ringed gas giant.
+      drawPlanet(ctx, px * 0.755, px * 0.235, px * 0.135,
+        { hue: 28, ring: true, spot: true, tilt: -0.38 });
 
-      gridLines(ctx, px, cells, 'rgba(255,190,130,0.035)', 1);
-      vignette(ctx, px, 0.6);
+      // A cratered moon and a small ice world.
+      drawMoon(ctx, px * 0.165, px * 0.155, px * 0.052);
+      drawPlanet(ctx, px * 0.135, px * 0.795, px * 0.085,
+        { hue: 195, bands: [[-0.42, 0.14, 12, 0.26], [0.10, 0.20, -10, 0.20], [0.55, 0.12, 16, 0.22]] });
+
+      drawComet(ctx, px * 0.60, px * 0.44, px * 0.30, -2.5);
+      drawSatellite(ctx, px * 0.86, px * 0.60, px * 0.075, 0.4);
+      drawRocket(ctx, px * 0.40, px * 0.62, px * 0.23, -0.55);
+
+      [[0.30, 0.90, 0.030], [0.52, 0.86, 0.020], [0.66, 0.95, 0.024], [0.92, 0.42, 0.018]]
+        .forEach(function (a) { drawAsteroid(ctx, px * a[0], px * a[1], px * a[2], rnd); });
+
+      gridLines(ctx, px, cells, 'rgba(124,196,255,0.045)', 1);
+      vignette(ctx, px, 0.45);
     },
 
-    // A teal berry - the one colour that cuts through all that brown.
+    // A glowing energy cell: core, containment ring, spark.
     drawFood: function (ctx, x, y, cell, pulse) {
       var cx = x + cell / 2, cy = y + cell / 2;
-      var r = cell * (0.30 + pulse * 0.05);
-      var col = NS.hsl(this.foodHue, 95, 60);
-      withGlow(ctx, col, cell * (1.15 + pulse), function () {
+      var r = cell * (0.26 + pulse * 0.04);
+      var col = NS.hsl(this.foodHue, 95, 58);
+
+      withGlow(ctx, col, cell * (1.3 + pulse * 0.6), function () {
         ctx.fillStyle = col;
         ctx.beginPath();
-        ctx.arc(cx, cy + cell * 0.04, r, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.beginPath();
-        ctx.arc(cx - r * 0.55, cy - r * 0.45, r * 0.52, 0, Math.PI * 2);
+        ctx.arc(cx, cy, r, 0, Math.PI * 2);
         ctx.fill();
       });
-      glint(ctx, cx + r * 0.25, cy - r * 0.2, r * 0.24);
+
+      ctx.strokeStyle = NS.hsl(this.foodHue, 90, 72, 0.9);
+      ctx.lineWidth = Math.max(1, cell * 0.05);
+      ctx.beginPath();
+      ctx.ellipse(cx, cy, r * 1.65, r * 0.55, 0.5 + pulse * 0.3, 0, Math.PI * 2);
+      ctx.stroke();
+
+      ctx.fillStyle = 'rgba(255,255,255,0.95)';
+      ctx.beginPath();
+      ctx.arc(cx, cy, r * 0.36, 0, Math.PI * 2);
+      ctx.fill();
     }
   };
 
@@ -1817,7 +2115,7 @@
     }
   };
 
-  NS.THEMES = [techy, grassy, blocky, medieval, sky, war, trunks, western, candy];
+  NS.THEMES = [techy, grassy, blocky, medieval, sky, war, space, western, candy];
   NS.GOLDEN = golden;
 
   // Past GOLDEN_SCORE the golden map is permanent; before it the nine themes

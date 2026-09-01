@@ -88,7 +88,7 @@ an Easy score should never outrank a Hard one.
 | 30–39 | Medieval — a castle great hall: flagstones, a runner, columns, window light, walls hung with heraldry |
 | 40–49 | Sky — stars and drifting cloud, a small sun |
 | 50–59 | War Map — topographic contours and advance routes, target reticle |
-| 60–69 | Tree Trunks — bark grain and knots, teal berry |
+| 60–69 | Space — nebula and starfield, a ringed gas giant, rocket, comet and satellite; green energy cell |
 | 70–79 | Western — a frontier main street at dusk: storefronts, boardwalk, horses at the rail, sheriff's star |
 | 80–89 | Candy — diagonal stripes and sprinkles, mint sweet |
 | 90–99 | wraps back to Techy |
