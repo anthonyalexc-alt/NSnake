@@ -26,6 +26,10 @@
     <div class="hud-item"><span class="hud-label">Best</span><span class="hud-value" id="hud-best">0</span></div>
     <div class="hud-item"><span class="hud-label">Map</span><span class="hud-value" id="hud-theme">Techy</span></div>
     <div class="hud-item hud-mute"><span class="hud-label">Sound</span><span class="hud-value" id="hud-mute">On</span></div>
+    <div class="hud-ctl">
+      <button type="button" class="hud-btn" id="btn-pause" aria-label="Pause or resume">&#10073;&#10073;</button>
+      <button type="button" class="hud-btn" id="btn-quit" aria-label="Quit to menu">&#10005;</button>
+    </div>
   </header>
 
   <div class="stage">
@@ -80,6 +84,10 @@
     <div class="overlay hidden" id="overlay-pause">
       <div class="panel">
         <h2 class="banner">PAUSED</h2>
+        <div class="row">
+          <button type="button" class="start" id="btn-resume">RESUME</button>
+          <button type="button" class="ghost" id="btn-pause-menu">MENU</button>
+        </div>
         <p class="hint">Space or P to resume &middot; R to restart &middot; Esc for menu</p>
       </div>
     </div>

@@ -21,9 +21,14 @@ On a touch device: **swipe to steer** — anywhere in the layout, not just the
 board — and a long drag can chain several turns without lifting your finger.
 The on-screen arrow buttons are optional: the start screen has an **Arrow
 buttons: Show / Hide** choice, remembered across sessions, and hiding them gives
-the space back to the board. The centre button of the pad pauses. Tapping the
-**Sound** readout in the HUD mutes. Touch steering activates only on
-`(pointer: coarse)` devices, so a mouse drag on a desktop never steers.
+the space back to the board. Tapping the **Sound** readout in the HUD mutes.
+Touch steering activates only on `(pointer: coarse)` devices, so a mouse drag on
+a desktop never steers.
+
+A phone has no `Space` and no `Esc`, so the HUD carries a **pause** and a **quit**
+button on touch devices, and the pause screen offers **RESUME** and **MENU**.
+Both are independent of the arrow-button setting — with the pad hidden there
+would otherwise be no way to pause or leave a run at all.
 
 ### Adding it to a phone home screen
 

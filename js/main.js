@@ -401,6 +401,7 @@
       onStart: startRun,
       onRestart: startRun,
       onMenu: toMenu,
+      onTogglePause: togglePause,
       // Keep the HUD and the menu backdrop in step with the selectors.
       onSelect: function () {
         if (state !== 'MENU') { return; }

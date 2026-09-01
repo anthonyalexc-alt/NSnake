@@ -84,6 +84,10 @@
         btnStart: $('btn-start'),
         btnAgain: $('btn-again'),
         btnMenu: $('btn-menu'),
+        btnPause: $('btn-pause'),
+        btnQuit: $('btn-quit'),
+        btnResume: $('btn-resume'),
+        btnPauseMenu: $('btn-pause-menu'),
         score: $('hud-score'),
         best: $('hud-best'),
         theme: $('hud-theme'),
@@ -120,9 +124,17 @@
       });
 
       // Blur after a click, or the focused button would swallow later Space presses.
-      el.btnStart.addEventListener('click', function () { this.blur(); handlers.onStart(); });
-      el.btnAgain.addEventListener('click', function () { this.blur(); handlers.onRestart(); });
-      el.btnMenu.addEventListener('click', function () { this.blur(); handlers.onMenu(); });
+      function wire(node, fn) {
+        if (!node) { return; }
+        node.addEventListener('click', function () { this.blur(); fn(); });
+      }
+      wire(el.btnStart, function () { handlers.onStart(); });
+      wire(el.btnAgain, function () { handlers.onRestart(); });
+      wire(el.btnMenu, function () { handlers.onMenu(); });
+      wire(el.btnPauseMenu, function () { handlers.onMenu(); });
+      wire(el.btnQuit, function () { handlers.onMenu(); });
+      wire(el.btnPause, function () { handlers.onTogglePause(); });
+      wire(el.btnResume, function () { handlers.onTogglePause(); });
 
       paintSelectors();
       this.setMute(NS.audio.isMuted());

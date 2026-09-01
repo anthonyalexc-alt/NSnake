@@ -520,6 +520,51 @@ html.pad-off .pad { display: none; }
   .start, .ghost { padding: 9px 18px; font-size: 13px; }
 }
 
+/* Pause and quit for touch. A phone has no Space and no Esc, and with the arrow
+   buttons hidden there is no pad centre button either, so without these there is
+   no way to pause or leave a run at all. Hidden where a keyboard exists. */
+.hud-ctl {
+  display: none;
+  align-items: center;
+  gap: 6px;
+  align-self: center;
+}
+
+.hud-btn {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font: inherit;
+  font-size: 11px;
+  line-height: 1;
+  color: var(--accent);
+  background: var(--accent-dim);
+  border: 1px solid var(--accent-soft);
+  border-radius: 9px;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: background 120ms ease, transform 120ms ease;
+}
+
+.hud-btn:active {
+  background: var(--accent-soft);
+  transform: scale(0.92);
+}
+
+@media (hover: none) and (pointer: coarse) {
+  .hud-ctl { display: flex; }
+}
+
+/* The pause and quit buttons push the bar past a narrow screen and it wraps to
+   two rows, which costs the board height. Tighten rather than drop anything. */
+@media (hover: none) and (pointer: coarse) and (max-width: 360px) {
+  .hud { gap: 4px 7px; padding: 8px 9px; }
+  .hud-item { min-width: 32px; }
+  .hud-btn { width: 27px; height: 27px; border-radius: 8px; font-size: 10px; }
+}
+
 /* The sound readout doubles as the mute toggle - on a phone there is no M key,
    so it has to stay reachable even on narrow screens. */
 .hud-mute {
