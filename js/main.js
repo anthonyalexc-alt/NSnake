@@ -136,6 +136,21 @@
     });
   }
 
+  // The grid each map bakes into its own backdrop is barely there by design, and
+  // vanishes entirely on the busy maps. This draws it over the art instead, so
+  // the cells read the same on every one of them.
+  function drawGrid(cell, cells) {
+    ctx.strokeStyle = theme.grid || 'rgba(255,255,255,0.14)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (var i = 1; i < cells; i++) {
+      var p = Math.round(i * cell) + 0.5;   // same alignment the backdrops use
+      ctx.moveTo(p, 0); ctx.lineTo(p, PX);
+      ctx.moveTo(0, p); ctx.lineTo(PX, p);
+    }
+    ctx.stroke();
+  }
+
   function render(time) {
     var cells = game ? game.cells : NS.ui.cells();
     var cell = PX / cells;
@@ -143,6 +158,7 @@
     ensureBackground(cells);
     ctx.clearRect(0, 0, PX, PX);
     ctx.drawImage(bg, 0, 0, PX, PX);
+    drawGrid(cell, cells);
 
     if (!game) { return; }
 

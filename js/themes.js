@@ -2011,6 +2011,8 @@
     // The board is a bright slab of gold. The page chrome stays dark, or the
     // light HUD text would be unreadable against it.
     ground: '#e7bd44', pageBg: '#1a1204',
+    // A white grid would disappear on a bright slab; this one is drawn in shadow.
+    grid: 'rgba(74,46,4,0.22)',
     accent: '#ffd24a',
     accentSoft: 'rgba(255,210,74,0.45)', accentDim: 'rgba(255,210,74,0.18)',
     foodHue: 195,          // icy: the apple here is a cut diamond
