@@ -733,36 +733,199 @@
     }
   };
 
+  /* ---- tactical map furniture ---- */
+
+  var MAP_FRIEND = '#6cc8ff';
+  var MAP_ENEMY = '#ff6a5a';
+
+  function bezierAt(p, t) {
+    var u = 1 - t;
+    return {
+      x: u * u * u * p[0] + 3 * u * u * t * p[2] + 3 * u * t * t * p[4] + t * t * t * p[6],
+      y: u * u * u * p[1] + 3 * u * u * t * p[3] + 3 * u * t * t * p[5] + t * t * t * p[7]
+    };
+  }
+
+  // NATO-style counter: box plus the symbol for its arm of service.
+  function unitCounter(ctx, cx, cy, w, colour, kind, echelon) {
+    var h = w * 0.66;
+    ctx.fillStyle = 'rgba(8,12,6,0.82)';
+    ctx.fillRect(cx - w / 2, cy - h / 2, w, h);
+    ctx.strokeStyle = colour;
+    ctx.lineWidth = Math.max(1, w * 0.055);
+    ctx.strokeRect(cx - w / 2, cy - h / 2, w, h);
+
+    ctx.beginPath();
+    if (kind === 'infantry') {                    // crossed diagonals
+      ctx.moveTo(cx - w / 2, cy - h / 2); ctx.lineTo(cx + w / 2, cy + h / 2);
+      ctx.moveTo(cx + w / 2, cy - h / 2); ctx.lineTo(cx - w / 2, cy + h / 2);
+    } else if (kind === 'armour') {               // ellipse
+      ctx.ellipse(cx, cy, w * 0.30, h * 0.30, 0, 0, Math.PI * 2);
+    } else {                                      // artillery: filled dot
+      ctx.arc(cx, cy, w * 0.10, 0, Math.PI * 2);
+    }
+    ctx.stroke();
+    if (kind === 'artillery') { ctx.fillStyle = colour; ctx.fill(); }
+
+    // Echelon dots above the box.
+    ctx.fillStyle = colour;
+    for (var i = 0; i < (echelon || 0); i++) {
+      ctx.beginPath();
+      ctx.arc(cx + (i - (echelon - 1) / 2) * w * 0.16, cy - h * 0.72, w * 0.035, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  // Front line with hatch ticks on the friendly side.
+  function frontLine(ctx, pts, colour, tick) {
+    ctx.strokeStyle = colour;
+    ctx.lineWidth = tick * 0.42;
+    ctx.beginPath();
+    ctx.moveTo(pts[0][0], pts[0][1]);
+    for (var i = 1; i < pts.length; i++) { ctx.lineTo(pts[i][0], pts[i][1]); }
+    ctx.stroke();
+
+    for (var j = 0; j < pts.length - 1; j++) {
+      var mx = (pts[j][0] + pts[j + 1][0]) / 2;
+      var my = (pts[j][1] + pts[j + 1][1]) / 2;
+      var dx = pts[j + 1][0] - pts[j][0], dy = pts[j + 1][1] - pts[j][1];
+      var len = Math.hypot(dx, dy) || 1;
+      ctx.beginPath();
+      ctx.moveTo(mx, my);
+      ctx.lineTo(mx - (dy / len) * tick, my + (dx / len) * tick);
+      ctx.stroke();
+    }
+  }
+
+  function advanceArrow(ctx, p, colour, w) {
+    ctx.save();
+    ctx.strokeStyle = colour;
+    ctx.lineWidth = w;
+    ctx.lineCap = 'round';
+    ctx.setLineDash([w * 1.8, w * 1.2]);
+    ctx.beginPath();
+    ctx.moveTo(p[0], p[1]);
+    ctx.bezierCurveTo(p[2], p[3], p[4], p[5], p[6], p[7]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    var tip = bezierAt(p, 1), near = bezierAt(p, 0.94);
+    var a = Math.atan2(tip.y - near.y, tip.x - near.x);
+    ctx.fillStyle = colour;
+    ctx.beginPath();
+    ctx.moveTo(tip.x, tip.y);
+    ctx.lineTo(tip.x - Math.cos(a - 0.42) * w * 3.2, tip.y - Math.sin(a - 0.42) * w * 3.2);
+    ctx.lineTo(tip.x - Math.cos(a + 0.42) * w * 3.2, tip.y - Math.sin(a + 0.42) * w * 3.2);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function compassRose(ctx, cx, cy, r, colour) {
+    ctx.strokeStyle = colour;
+    ctx.lineWidth = Math.max(1, r * 0.06);
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.fillStyle = colour;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - r * 1.05);
+    ctx.lineTo(cx + r * 0.20, cy);
+    ctx.lineTo(cx, cy + r * 0.55);
+    ctx.lineTo(cx - r * 0.20, cy);
+    ctx.closePath();
+    ctx.fill();
+    ctx.font = 'bold ' + (r * 0.6) + 'px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('N', cx, cy - r * 1.25);
+    ctx.textAlign = 'start';
+  }
+
+  function forestPatch(ctx, cx, cy, r, rnd) {
+    for (var i = 0; i < 9; i++) {
+      var a = rnd() * Math.PI * 2, d = rnd() * r;
+      var tx = cx + Math.cos(a) * d, ty = cy + Math.sin(a) * d;
+      var s = r * (0.16 + rnd() * 0.10);
+      ctx.fillStyle = 'rgba(58,120,64,0.5)';
+      ctx.beginPath();
+      ctx.moveTo(tx, ty - s);
+      ctx.lineTo(tx + s * 0.62, ty + s * 0.6);
+      ctx.lineTo(tx - s * 0.62, ty + s * 0.6);
+      ctx.closePath();
+      ctx.fill();
+    }
+  }
+
   /* ---------------- 6. War Map ---------------- */
 
   var war = {
     key: 'WAR', name: 'War Map',
-    ground: '#0d1208', accent: '#b6ff5a',
+    ground: '#0e1408', accent: '#b6ff5a',
     accentSoft: 'rgba(182,255,90,0.35)', accentDim: 'rgba(182,255,90,0.12)',
-    foodHue: 355,
+    foodHue: 45,           // amber objective pin - red would read as an enemy unit
+
+    // Supply route the convoy runs along, and the radar post that sweeps.
+    route: [0.06, 0.92, 0.30, 0.74, 0.46, 0.96, 0.74, 0.62],
+    radar: [0.84, 0.20],
+    objective: [0.30, 0.30],
 
     paint: function (ctx, px, cells) {
       var rnd = NS.seededRandom(cells * 3719 + 83);
 
+      // Map board.
       ctx.fillStyle = this.ground;
       ctx.fillRect(0, 0, px, px);
+      var wash = ctx.createLinearGradient(0, 0, px, px);
+      wash.addColorStop(0, 'rgba(120,140,70,0.10)');
+      wash.addColorStop(0.5, 'rgba(80,100,50,0.04)');
+      wash.addColorStop(1, 'rgba(40,60,30,0.10)');
+      ctx.fillStyle = wash;
+      ctx.fillRect(0, 0, px, px);
 
-      // Topographic contours.
-      var groups = 3 + Math.floor(rnd() * 3);
+      // Foxing and creases, so it reads as paper.
+      for (var f = 0; f < 40; f++) {
+        var fx = rnd() * px, fy = rnd() * px, fr = px * (0.01 + rnd() * 0.05);
+        ctx.fillStyle = 'rgba(150,140,70,' + (0.010 + rnd() * 0.022) + ')';
+        ctx.beginPath();
+        ctx.arc(fx, fy, fr, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.strokeStyle = 'rgba(0,0,0,0.22)';
+      ctx.lineWidth = Math.max(1, px * 0.0016);
+      [0.34, 0.68].forEach(function (c) {
+        ctx.beginPath(); ctx.moveTo(px * c, 0); ctx.lineTo(px * c, px); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(0, px * c); ctx.lineTo(px, px * c); ctx.stroke();
+      });
+
+      /* ---- terrain ---- */
+
+      // River, with banks.
+      var river = [0.02, 0.16, 0.34, 0.30, 0.30, 0.62, 0.62, 0.80];
+      ctx.strokeStyle = 'rgba(56,120,150,0.55)';
+      ctx.lineWidth = px * 0.030;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(px * river[0], px * river[1]);
+      ctx.bezierCurveTo(px * river[2], px * river[3], px * river[4], px * river[5],
+        px * river[6], px * river[7]);
+      ctx.stroke();
+      ctx.strokeStyle = 'rgba(120,200,220,0.30)';
+      ctx.lineWidth = px * 0.006;
+      ctx.stroke();
+
+      // Contours.
+      var groups = 3;
       ctx.lineWidth = Math.max(1, px * 0.0018);
       for (var g = 0; g < groups; g++) {
-        var ox = px * (0.15 + rnd() * 0.7);
-        var oy = px * (0.15 + rnd() * 0.7);
-        var rings = 3 + Math.floor(rnd() * 4);
-        var wob = 0.12 + rnd() * 0.16;
-        var phase = rnd() * Math.PI * 2;
+        var ox = px * (0.18 + rnd() * 0.66), oy = px * (0.18 + rnd() * 0.66);
+        var rings = 3 + Math.floor(rnd() * 3);
+        var wob = 0.12 + rnd() * 0.14, phase = rnd() * Math.PI * 2;
         for (var k = 1; k <= rings; k++) {
-          var base = px * 0.03 * k;
-          ctx.strokeStyle = 'rgba(182,255,90,' + (0.16 - k * 0.014) + ')';
+          ctx.strokeStyle = 'rgba(182,255,90,' + (0.15 - k * 0.016) + ')';
           ctx.beginPath();
-          for (var a = 0; a <= 64; a++) {
-            var t = (a / 64) * Math.PI * 2;
-            var rr = base * (1 + Math.sin(t * 3 + phase) * wob + Math.sin(t * 5 + phase * 2) * wob * 0.4);
+          for (var a = 0; a <= 56; a++) {
+            var t = (a / 56) * Math.PI * 2;
+            var rr = px * 0.028 * k * (1 + Math.sin(t * 3 + phase) * wob);
             var xx = ox + Math.cos(t) * rr, yy = oy + Math.sin(t) * rr;
             if (a === 0) { ctx.moveTo(xx, yy); } else { ctx.lineTo(xx, yy); }
           }
@@ -771,54 +934,161 @@
         }
       }
 
-      gridLines(ctx, px, cells, 'rgba(182,255,90,0.05)', 1);
+      forestPatch(ctx, px * 0.18, px * 0.74, px * 0.10, rnd);
+      forestPatch(ctx, px * 0.72, px * 0.42, px * 0.09, rnd);
 
-      // Sector grid and dashed advance routes.
-      ctx.strokeStyle = 'rgba(182,255,90,0.13)';
-      ctx.lineWidth = Math.max(1, px * 0.0022);
+      // Road, and a town where it meets the river.
+      ctx.strokeStyle = 'rgba(190,170,90,0.42)';
+      ctx.lineWidth = px * 0.010;
       ctx.beginPath();
-      for (var q = 1; q < 4; q++) {
-        ctx.moveTo((px / 4) * q, 0); ctx.lineTo((px / 4) * q, px);
-        ctx.moveTo(0, (px / 4) * q); ctx.lineTo(px, (px / 4) * q);
-      }
+      ctx.moveTo(0, px * 0.52);
+      ctx.bezierCurveTo(px * 0.30, px * 0.44, px * 0.60, px * 0.58, px, px * 0.46);
+      ctx.stroke();
+      ctx.strokeStyle = 'rgba(20,26,14,0.6)';
+      ctx.lineWidth = px * 0.003;
       ctx.stroke();
 
-      ctx.setLineDash([px * 0.018, px * 0.014]);
-      ctx.strokeStyle = 'rgba(255,190,80,0.30)';
-      ctx.lineWidth = Math.max(1, px * 0.003);
-      for (var d = 0; d < 3; d++) {
-        ctx.beginPath();
-        ctx.moveTo(rnd() * px, rnd() * px);
-        ctx.quadraticCurveTo(rnd() * px, rnd() * px, rnd() * px, rnd() * px);
-        ctx.stroke();
+      ctx.fillStyle = 'rgba(200,190,120,0.45)';
+      for (var b = 0; b < 7; b++) {
+        ctx.fillRect(px * (0.40 + (b % 4) * 0.022), px * (0.50 + Math.floor(b / 4) * 0.026),
+          px * 0.014, px * 0.014);
       }
-      ctx.setLineDash([]);
 
-      // Position markers.
-      for (var m = 0; m < Math.max(3, Math.round(cells * 0.2)); m++) {
-        var mx = px * (0.1 + rnd() * 0.8), my = px * (0.1 + rnd() * 0.8);
-        var mr = px * 0.012;
-        ctx.strokeStyle = 'rgba(182,255,90,0.5)';
-        ctx.lineWidth = Math.max(1, px * 0.002);
-        ctx.beginPath();
-        ctx.arc(mx, my, mr, 0, Math.PI * 2);
-        ctx.moveTo(mx - mr * 1.8, my); ctx.lineTo(mx + mr * 1.8, my);
-        ctx.moveTo(mx, my - mr * 1.8); ctx.lineTo(mx, my + mr * 1.8);
-        ctx.stroke();
+      /* ---- grid references ---- */
+      ctx.fillStyle = 'rgba(182,255,90,0.42)';
+      ctx.font = 'bold ' + (px * 0.020) + 'px ui-monospace, "Courier New", monospace';
+      var letters = 'ABCDEFGH';
+      for (var i = 0; i < 8; i++) {
+        ctx.fillText(letters[i], px * (0.055 + i * 0.121), px * 0.030);
+        ctx.fillText(String(i + 1), px * 0.012, px * (0.075 + i * 0.121));
       }
+      ctx.strokeStyle = 'rgba(182,255,90,0.16)';
+      ctx.lineWidth = Math.max(1, px * 0.0022);
+      ctx.strokeRect(px * 0.035, px * 0.038, px * 0.945, px * 0.945);
+
+      /* ---- tactical overlay ---- */
+
+      frontLine(ctx, [[px * 0.10, px * 0.60], [px * 0.28, px * 0.52], [px * 0.44, px * 0.60],
+        [px * 0.62, px * 0.50], [px * 0.80, px * 0.56], [px * 0.96, px * 0.48]],
+        'rgba(255,106,90,0.75)', px * 0.020);
+
+      advanceArrow(ctx, [px * 0.16, px * 0.80, px * 0.24, px * 0.66,
+        px * 0.34, px * 0.62, px * 0.42, px * 0.50], MAP_FRIEND, px * 0.009);
+      advanceArrow(ctx, [px * 0.90, px * 0.26, px * 0.80, px * 0.36,
+        px * 0.74, px * 0.40, px * 0.66, px * 0.46], MAP_ENEMY, px * 0.009);
+
+      unitCounter(ctx, px * 0.20, px * 0.86, px * 0.085, MAP_FRIEND, 'infantry', 2);
+      unitCounter(ctx, px * 0.46, px * 0.78, px * 0.085, MAP_FRIEND, 'armour', 1);
+      unitCounter(ctx, px * 0.78, px * 0.86, px * 0.085, MAP_FRIEND, 'artillery', 3);
+      unitCounter(ctx, px * 0.62, px * 0.24, px * 0.085, MAP_ENEMY, 'armour', 2);
+      unitCounter(ctx, px * 0.30, px * 0.14, px * 0.085, MAP_ENEMY, 'infantry', 1);
+
+      compassRose(ctx, px * 0.115, px * 0.20, px * 0.035, 'rgba(182,255,90,0.6)');
+
+      // Scale bar.
+      ctx.fillStyle = 'rgba(182,255,90,0.55)';
+      for (var s = 0; s < 4; s++) {
+        if (s % 2 === 0) { ctx.fillRect(px * (0.80 + s * 0.035), px * 0.955, px * 0.035, px * 0.010); }
+      }
+      ctx.strokeStyle = 'rgba(182,255,90,0.55)';
+      ctx.lineWidth = Math.max(1, px * 0.0016);
+      ctx.strokeRect(px * 0.80, px * 0.955, px * 0.14, px * 0.010);
 
       vignette(ctx, px, 0.5);
     },
 
-    // Target reticle.
+    /* ---- the live layer ---- */
+    drawOverlay: function (ctx, px, cells, time) {
+      var t = time / 1000;
+
+      // Radar sweep from the post in the north east.
+      var rx = px * this.radar[0], ry = px * this.radar[1], rr = px * 0.30;
+      var ang = (t * 0.9) % (Math.PI * 2);
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(rx, ry, rr, 0, Math.PI * 2);
+      ctx.clip();
+      for (var i = 0; i < 16; i++) {                 // fading trail behind the beam
+        var a0 = ang - i * 0.05;
+        ctx.fillStyle = 'rgba(182,255,90,' + (0.085 * (1 - i / 16)) + ')';
+        ctx.beginPath();
+        ctx.moveTo(rx, ry);
+        ctx.arc(rx, ry, rr, a0 - 0.05, a0);
+        ctx.closePath();
+        ctx.fill();
+      }
+      ctx.restore();
+      ctx.strokeStyle = 'rgba(182,255,90,0.85)';
+      ctx.lineWidth = Math.max(1, px * 0.003);
+      ctx.beginPath();
+      ctx.moveTo(rx, ry);
+      ctx.lineTo(rx + Math.cos(ang) * rr, ry + Math.sin(ang) * rr);
+      ctx.stroke();
+      ctx.strokeStyle = 'rgba(182,255,90,0.28)';
+      ctx.lineWidth = Math.max(1, px * 0.002);
+      [0.4, 0.7, 1].forEach(function (f) {
+        ctx.beginPath(); ctx.arc(rx, ry, rr * f, 0, Math.PI * 2); ctx.stroke();
+      });
+
+      // Contacts that light up as the beam passes over them.
+      [[0.74, 0.10], [0.93, 0.30], [0.78, 0.34]].forEach(function (c) {
+        var cx = px * c[0], cy = px * c[1];
+        var ca = Math.atan2(cy - ry, cx - rx);
+        var diff = (ang - ca + Math.PI * 4) % (Math.PI * 2);
+        var lit = Math.max(0, 1 - diff / 1.4);
+        if (lit <= 0.02) { return; }
+        ctx.fillStyle = 'rgba(255,106,90,' + lit + ')';
+        ctx.beginPath();
+        ctx.arc(cx, cy, px * 0.008, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      // Convoy running the supply route.
+      var route = this.route.map(function (v) { return v * px; });
+      ctx.setLineDash([px * 0.014, px * 0.010]);
+      ctx.strokeStyle = 'rgba(108,200,255,0.35)';
+      ctx.lineWidth = Math.max(1, px * 0.004);
+      ctx.beginPath();
+      ctx.moveTo(route[0], route[1]);
+      ctx.bezierCurveTo(route[2], route[3], route[4], route[5], route[6], route[7]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      for (var v = 0; v < 3; v++) {
+        var f2 = ((t * 0.11) + v * 0.14) % 1;
+        var p = bezierAt(route, f2);
+        var fade = Math.min(1, Math.min(f2, 1 - f2) * 8);
+        ctx.fillStyle = 'rgba(150,220,255,' + (0.9 * fade) + ')';
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, px * 0.007, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Objective, pulsing.
+      var ox = px * this.objective[0], oy = px * this.objective[1];
+      var pulse = (t * 0.5) % 1;
+      ctx.strokeStyle = 'rgba(255,106,90,' + (0.55 * (1 - pulse)) + ')';
+      ctx.lineWidth = Math.max(1, px * 0.004);
+      ctx.beginPath();
+      ctx.arc(ox, oy, px * (0.018 + pulse * 0.055), 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.strokeStyle = 'rgba(255,106,90,0.8)';
+      ctx.beginPath();
+      ctx.arc(ox, oy, px * 0.016, 0, Math.PI * 2);
+      ctx.moveTo(ox - px * 0.026, oy); ctx.lineTo(ox + px * 0.026, oy);
+      ctx.moveTo(ox, oy - px * 0.026); ctx.lineTo(ox, oy + px * 0.026);
+      ctx.stroke();
+    },
+
+    // Amber objective pin.
     drawFood: function (ctx, x, y, cell, pulse) {
       var cx = x + cell / 2, cy = y + cell / 2;
       var r = cell * (0.30 + pulse * 0.05);
-      var col = NS.hsl(this.foodHue, 95, 58);
-      withGlow(ctx, col, cell * (1.1 + pulse), function () {
+      var col = NS.hsl(this.foodHue, 100, 58);
+      withGlow(ctx, col, cell * (1.15 + pulse), function () {
         ctx.fillStyle = col;
         ctx.beginPath();
-        ctx.arc(cx, cy, r * 0.52, 0, Math.PI * 2);
+        ctx.arc(cx, cy, r * 0.5, 0, Math.PI * 2);
         ctx.fill();
         ctx.strokeStyle = col;
         ctx.lineWidth = Math.max(1, cell * 0.075);
@@ -826,12 +1096,16 @@
         ctx.arc(cx, cy, r, 0, Math.PI * 2);
         ctx.stroke();
         ctx.beginPath();
-        ctx.moveTo(cx - r * 1.35, cy); ctx.lineTo(cx - r * 0.6, cy);
-        ctx.moveTo(cx + r * 0.6, cy); ctx.lineTo(cx + r * 1.35, cy);
-        ctx.moveTo(cx, cy - r * 1.35); ctx.lineTo(cx, cy - r * 0.6);
-        ctx.moveTo(cx, cy + r * 0.6); ctx.lineTo(cx, cy + r * 1.35);
+        ctx.moveTo(cx - r * 1.4, cy); ctx.lineTo(cx - r * 0.62, cy);
+        ctx.moveTo(cx + r * 0.62, cy); ctx.lineTo(cx + r * 1.4, cy);
+        ctx.moveTo(cx, cy - r * 1.4); ctx.lineTo(cx, cy - r * 0.62);
+        ctx.moveTo(cx, cy + r * 0.62); ctx.lineTo(cx, cy + r * 1.4);
         ctx.stroke();
       });
+      ctx.fillStyle = 'rgba(255,255,255,0.9)';
+      ctx.beginPath();
+      ctx.arc(cx, cy, r * 0.2, 0, Math.PI * 2);
+      ctx.fill();
     }
   };
 
