@@ -382,67 +382,183 @@
     }
   };
 
+  /* ---- toy bricks ---- */
+
+  // A brick seen head on, with the studs on its top edge standing proud of it.
+  // Face, top bevel and a shaded right side give it depth without a full
+  // isometric projection, which would fight the flat board.
+  function toyBrick(ctx, x, y, w, h, hue, studs, alpha) {
+    var a = alpha === undefined ? 1 : alpha;
+    var studH = h * 0.30;
+    var n = studs || Math.max(1, Math.round(w / (h * 0.9)));
+
+    ctx.save();
+    ctx.globalAlpha = a;
+
+    // Studs first, so the body's top edge covers their base.
+    for (var i = 0; i < n; i++) {
+      var scx = x + (w * (i + 0.5)) / n;
+      var sr = Math.min(w / n, h) * 0.28;
+      ctx.fillStyle = NS.hsl(hue, 70, 44);
+      ctx.fillRect(scx - sr, y - studH, sr * 2, studH);
+      ctx.fillStyle = NS.hsl(hue, 72, 62);
+      ctx.beginPath();
+      ctx.ellipse(scx, y - studH, sr, sr * 0.46, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(0,0,0,0.28)';
+      ctx.lineWidth = Math.max(1, h * 0.028);
+      ctx.stroke();
+    }
+
+    ctx.fillStyle = NS.hsl(hue, 70, 50);                  // face
+    ctx.fillRect(x, y, w, h);
+    ctx.fillStyle = NS.hsl(hue, 75, 64);                  // top bevel
+    ctx.fillRect(x, y, w, h * 0.16);
+    ctx.fillStyle = 'rgba(0,0,0,0.26)';                   // right side in shade
+    ctx.fillRect(x + w - w * 0.07, y, w * 0.07, h);
+    ctx.fillStyle = 'rgba(0,0,0,0.18)';                   // seated shadow
+    ctx.fillRect(x, y + h - h * 0.10, w, h * 0.10);
+
+    ctx.strokeStyle = 'rgba(0,0,0,0.35)';
+    ctx.lineWidth = Math.max(1, h * 0.045);
+    ctx.strokeRect(x, y, w, h);
+    ctx.restore();
+  }
+
+  // Stack of bricks, each row inset a little, like a child's tower.
+  function brickStack(ctx, x, baseY, unit, rows, hues) {
+    for (var r = 0; r < rows.length; r++) {
+      var row = rows[r];
+      var w = unit * row[0];
+      var bx = x + unit * row[1];
+      var by = baseY - unit * 0.62 * (r + 1);
+      toyBrick(ctx, bx, by, w, unit * 0.62, hues[r % hues.length], Math.round(row[0]));
+    }
+  }
+
+  function brickArch(ctx, x, baseY, unit, hues) {
+    var colW = unit * 1.0, colH = unit * 0.62;
+    for (var r = 0; r < 3; r++) {
+      toyBrick(ctx, x, baseY - colH * (r + 1), colW, colH, hues[r % hues.length], 1);
+      toyBrick(ctx, x + unit * 2.4, baseY - colH * (r + 1), colW, colH,
+        hues[(r + 1) % hues.length], 1);
+    }
+    toyBrick(ctx, x, baseY - colH * 4, unit * 3.4, colH, hues[2 % hues.length], 3);
+  }
+
   /* ---------------- 3. Blocky ---------------- */
 
   var blocky = {
     key: 'BLOCKY', name: 'Blocky',
-    ground: '#0b0616', accent: '#ffd166',
+    ground: '#140a2a', accent: '#ffd166',
     accentSoft: 'rgba(255,209,102,0.35)', accentDim: 'rgba(255,209,102,0.12)',
-    foodHue: 190,
+    foodHue: 190,          // cyan: the one brick colour not in the box below
+
+    // Classic brick colours, cyan deliberately left out so the apple owns it.
+    hues: [4, 42, 128, 24, 288, 336],
+
+    // Pieces still coming down, in the animated layer.
+    falling: [
+      { x: 0.30, w: 2, hue: 4, speed: 0.135, off: 0.10 },
+      { x: 0.61, w: 3, hue: 42, speed: 0.100, off: 0.55 },
+      { x: 0.86, w: 1, hue: 128, speed: 0.170, off: 0.80 }
+    ],
 
     paint: function (ctx, px, cells) {
       var rnd = NS.seededRandom(cells * 5237 + 43);
-      var cell = px / cells;
+      var unit = px * 0.085;
 
-      ctx.fillStyle = this.ground;
+      var bg = ctx.createLinearGradient(0, 0, 0, px);
+      bg.addColorStop(0, '#241148');
+      bg.addColorStop(0.55, '#180c31');
+      bg.addColorStop(1, '#0e0620');
+      ctx.fillStyle = bg;
       ctx.fillRect(0, 0, px, px);
 
-      for (var gy = 0; gy < cells; gy++) {
-        for (var gx = 0; gx < cells; gx++) {
-          if ((gx + gy) % 2 === 0) { continue; }
-          ctx.fillStyle = 'rgba(255,255,255,0.028)';
-          ctx.fillRect(gx * cell, gy * cell, cell, cell);
+      // Faint stud dimples in the backdrop, as though the whole board is a plate.
+      var step = px / 12;
+      for (var gy = 0; gy < 12; gy++) {
+        for (var gx = 0; gx < 12; gx++) {
+          ctx.fillStyle = 'rgba(255,255,255,0.030)';
+          ctx.beginPath();
+          ctx.ellipse(step * (gx + 0.5), step * (gy + 0.5), step * 0.13, step * 0.06, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = 'rgba(0,0,0,0.10)';
+          ctx.beginPath();
+          ctx.ellipse(step * (gx + 0.5), step * (gy + 0.5) + step * 0.045,
+            step * 0.13, step * 0.06, 0, 0, Math.PI * 2);
+          ctx.fill();
         }
       }
 
-      var hues = [320, 45, 275, 165, 200, 10];
-      var tiles = Math.round(cells * cells * 0.06);
-      for (var i = 0; i < tiles; i++) {
-        var tx = Math.floor(rnd() * cells) * cell;
-        var ty = Math.floor(rnd() * cells) * cell;
-        var hue = hues[Math.floor(rnd() * hues.length)];
-        var pad = cell * 0.16;
-        ctx.fillStyle = NS.hsl(hue, 95, 65, 0.14 + rnd() * 0.16);
-        ctx.fillRect(tx + pad, ty + pad, cell - pad * 2, cell - pad * 2);
-      }
+      var hues = this.hues;
 
-      var lit = Math.round(cells * 0.7);
-      for (var j = 0; j < lit; j++) {
-        var bx = Math.floor(rnd() * cells) * cell;
-        var by = Math.floor(rnd() * cells) * cell;
-        var bh = hues[Math.floor(rnd() * hues.length)];
-        var bpad = cell * 0.22;
-        var bcol = NS.hsl(bh, 100, 68, 0.5);
-        withGlow(ctx, NS.hsl(bh, 100, 68), cell * 0.8, function () {
-          ctx.fillStyle = bcol;
-          ctx.fillRect(bx + bpad, by + bpad, cell - bpad * 2, cell - bpad * 2);
+      // Three built things, well apart from each other.
+      brickStack(ctx, px * 0.055, px * 0.95, unit,
+        [[3, 0], [2, 0.5], [1, 1.0]], [hues[0], hues[1], hues[2]]);
+      brickArch(ctx, px * 0.605, px * 0.93, unit, [hues[3], hues[4], hues[1]]);
+      brickStack(ctx, px * 0.335, px * 0.42, unit * 0.8,
+        [[2, 0], [2, 0.25]], [hues[5], hues[2]]);
+
+      // Loose pieces, placed to keep clear of the built things rather than
+      // landing on top of them or running off the edge.
+      [[0.115, 0.215, 2, 0], [0.845, 0.575, 1, 3], [0.055, 0.615, 2, 5], [0.815, 0.215, 2, 1]]
+        .forEach(function (b) {
+          toyBrick(ctx, px * b[0], px * b[1], unit * b[2], unit * 0.62, hues[b[3]], b[2]);
         });
-      }
 
-      gridLines(ctx, px, cells, 'rgba(255,255,255,0.045)', 1);
-      vignette(ctx, px);
+      // Spare single pieces, kept to the open upper band.
+      [[0.485, 0.135], [0.235, 0.395], [0.685, 0.305]].forEach(function (s, i) {
+        toyBrick(ctx, px * s[0], px * s[1], unit * 0.55, unit * 0.4,
+          hues[(i * 2 + 1) % hues.length], 1, 0.8);
+      });
+
+      vignette(ctx, px, 0.46);
     },
 
-    drawFood: function (ctx, x, y, cell, pulse) {
-      var pad = cell * (0.2 - pulse * 0.04);
-      var col = NS.hsl(this.foodHue, 100, 65);
-      withGlow(ctx, col, cell * (1.1 + pulse), function () {
-        ctx.fillStyle = col;
-        ctx.fillRect(x + pad, y + pad, cell - pad * 2, cell - pad * 2);
+    drawOverlay: function (ctx, px, cells, time) {
+      var t = time / 1000;
+      var unit = px * 0.085;
+      this.falling.forEach(function (f) {
+        // Falls from above the board to its landing height, waits, repeats.
+        var cycle = ((t * f.speed + f.off) % 1);
+        var drop = Math.min(1, cycle / 0.72);
+        var eased = drop * drop;                          // accelerating fall
+        var y = -unit + eased * (px * 0.86 + unit);
+        var settle = cycle > 0.72 ? Math.sin((cycle - 0.72) * 22) * unit * 0.05 * (1 - (cycle - 0.72) / 0.28) : 0;
+        var fade = cycle > 0.94 ? 1 - (cycle - 0.94) / 0.06 : 1;
+        toyBrick(ctx, px * f.x, y + settle, unit * f.w, unit * 0.62, f.hue, f.w, fade);
       });
-      ctx.fillStyle = 'rgba(255,255,255,0.92)';
-      var ip = cell * 0.35;
-      ctx.fillRect(x + ip, y + ip, cell - ip * 2, cell - ip * 2);
+    },
+
+    // A cyan piece, lit from within: the one colour no brick on the board uses.
+    drawFood: function (ctx, x, y, cell, pulse) {
+      var pad = cell * (0.16 - pulse * 0.02);
+      var w = cell - pad * 2, h = cell - pad * 2;
+      var bx = x + pad, by = y + pad;
+      var col = NS.hsl(this.foodHue, 100, 62);
+
+      ctx.fillStyle = 'rgba(6,4,16,0.55)';
+      ctx.fillRect(bx - cell * 0.06, by - cell * 0.14, w + cell * 0.12, h + cell * 0.20);
+
+      withGlow(ctx, col, cell * (1.2 + pulse), function () {
+        var sr = w * 0.22;
+        ctx.fillStyle = NS.hsl(190, 100, 48);             // stud
+        ctx.fillRect(bx + w / 2 - sr, by - h * 0.22, sr * 2, h * 0.22);
+        ctx.fillStyle = NS.hsl(190, 100, 72);
+        ctx.beginPath();
+        ctx.ellipse(bx + w / 2, by - h * 0.22, sr, sr * 0.46, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = col;                              // body
+        ctx.fillRect(bx, by, w, h);
+      });
+
+      ctx.fillStyle = 'rgba(255,255,255,0.55)';
+      ctx.fillRect(bx, by, w, h * 0.18);
+      ctx.strokeStyle = 'rgba(4,20,28,0.75)';
+      ctx.lineWidth = Math.max(1, cell * 0.055);
+      ctx.strokeRect(bx, by, w, h);
     }
   };
 
