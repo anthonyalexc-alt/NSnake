@@ -41,16 +41,6 @@
     bgKey = key;
   }
 
-  function roundRectPath(c, x, y, w, h, r) {
-    if (c.roundRect) { c.roundRect(x, y, w, h, r); return; }
-    c.moveTo(x + r, y);
-    c.arcTo(x + w, y, x + w, y + h, r);
-    c.arcTo(x + w, y + h, x, y + h, r);
-    c.arcTo(x, y + h, x, y, r);
-    c.arcTo(x, y, x + w, y, r);
-    c.closePath();
-  }
-
   /* ---------------- colour ---------------- */
 
   // Never pick a hue that reads as the current theme's apple. 40 degrees was too
@@ -66,6 +56,46 @@
 
   /* ---------------- rendering ---------------- */
 
+  // Cell centres from the head back, each carrying how far along the body it is
+  // so widths and colours can taper. Normally one run; in wrap mode the body is
+  // split wherever it crosses an edge.
+  function bodyRuns(cell) {
+    var body = game.body, runs = [], cur = [], i;
+    var last = Math.max(1, body.length - 1);
+
+    function pt(seg, idx) {
+      return { x: (seg.x + 0.5) * cell, y: (seg.y + 0.5) * cell, t: idx / last };
+    }
+    // A point just past the edge `seg` is sitting against, so a wrapped body runs
+    // off one side and back in at the other rather than straight across the board.
+    function offBoard(p, seg, horiz) {
+      var out = cell * 0.62;
+      return horiz
+        ? { x: p.x + (seg.x === 0 ? -out : out), y: p.y, t: p.t }
+        : { x: p.x, y: p.y + (seg.y === 0 ? -out : out), t: p.t };
+    }
+
+    cur.push(pt(body[0], 0));
+    for (i = 1; i < body.length; i++) {
+      var a = body[i - 1], b = body[i], bp = pt(b, i);
+      var dx = Math.abs(a.x - b.x), dy = Math.abs(a.y - b.y);
+      // Adjacent: the run carries on. Only a jump of more than one cell is a
+      // wrap; anything else would be a bug, and a straight link beats a spur
+      // shooting off the edge of the board.
+      if (dx <= 1 && dy <= 1) { cur.push(bp); continue; }
+      var horiz = dx > dy;
+      cur.push(offBoard(cur[cur.length - 1], a, horiz));
+      runs.push(cur);
+      cur = [offBoard(bp, b, horiz), bp];
+    }
+    runs.push(cur);
+    return runs;
+  }
+
+  // The body is one stroked line through the cell centres instead of a rounded
+  // square per segment, so it reads as a single unbroken snake. Each link is
+  // stroked on its own with a round cap, which both lets the width taper toward
+  // the tail and rounds off every corner where two links meet.
   function drawSnake(cell, time) {
     var body = game.body;
     var goldenSnake = NS.isGolden(game.score);
@@ -73,52 +103,83 @@
     // so it gets a dark bronze rim to hold its shape against the slab.
     var glow = goldenSnake ? 'hsl(38,100%,52%)' : NS.hsl(hue, 100, 58);
     var core = goldenSnake ? 'hsl(46,100%,70%)' : NS.hsl(hue, 100, 84);
-    var pad = cell * 0.09;
-    var size = cell - pad * 2;
-    var radius = Math.max(1, cell * 0.28);
-    var i, seg;
+    var runs = bodyRuns(cell);
+    var k, run;
 
-    // One fill for the whole body means one shadow render, not one per segment.
+    function bodyW(t) { return cell * (0.86 - 0.20 * t); }
+    function coreW(t) { return cell * (0.50 - 0.16 * t); }
+
+    function strokeLinks(widthFn, colourFn) {
+      for (var r = 0; r < runs.length; r++) {
+        run = runs[r];
+        if (run.length < 2) {                     // a one-cell snake has no link
+          ctx.fillStyle = colourFn(0);
+          ctx.beginPath();
+          ctx.arc(run[0].x, run[0].y, widthFn(0) / 2, 0, Math.PI * 2);
+          ctx.fill();
+          continue;
+        }
+        for (k = 1; k < run.length; k++) {
+          var p = run[k - 1], q = run[k], t = (p.t + q.t) / 2;
+          ctx.lineWidth = widthFn(t);
+          ctx.strokeStyle = colourFn(t);
+          ctx.beginPath();
+          ctx.moveTo(p.x, p.y);
+          ctx.lineTo(q.x, q.y);
+          ctx.stroke();
+        }
+      }
+    }
+
     ctx.save();
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    // The whole body as one path, for the passes that want an unbroken line
+    // rather than a per-link taper.
+    function strokeWhole() {
+      for (var r = 0; r < runs.length; r++) {
+        var rr = runs[r];
+        ctx.beginPath();
+        ctx.moveTo(rr[0].x, rr[0].y);
+        if (rr.length < 2) { ctx.lineTo(rr[0].x + 0.01, rr[0].y); }
+        for (var m = 1; m < rr.length; m++) { ctx.lineTo(rr[m].x, rr[m].y); }
+        ctx.stroke();
+      }
+    }
+
+    // The halo goes down in one stroke per run. A shadow per link would cost far
+    // more and glow no brighter.
     ctx.shadowColor = glow;
     ctx.shadowBlur = cell * (goldenSnake ? 1.0 : 0.85);
-    ctx.fillStyle = glow;
-    ctx.beginPath();
-    for (i = 0; i < body.length; i++) {
-      seg = body[i];
-      roundRectPath(ctx, seg.x * cell + pad, seg.y * cell + pad, size, size, radius);
-    }
-    ctx.fill();
-    ctx.restore();
+    ctx.strokeStyle = glow;
+    ctx.lineWidth = cell * 0.74;
+    strokeWhole();
+    ctx.shadowBlur = 0;
 
-    // Dark bronze rim, only where the ground is as bright as the snake.
+    // The rim is the whole body stroked wider underneath and then painted over,
+    // so only the silhouette of it survives.
     if (goldenSnake) {
-      ctx.strokeStyle = 'rgba(52,28,2,0.85)';
-      ctx.lineWidth = Math.max(1, cell * 0.1);
-      ctx.beginPath();
-      for (i = 0; i < body.length; i++) {
-        seg = body[i];
-        roundRectPath(ctx, seg.x * cell + pad, seg.y * cell + pad, size, size, radius);
-      }
-      ctx.stroke();
+      strokeLinks(function (t) { return bodyW(t) + cell * 0.12; },
+        function () { return 'rgba(52,28,2,0.85)'; });
     }
 
-    // Bright core, tapering slightly toward the tail.
-    ctx.fillStyle = core;
-    for (i = 0; i < body.length; i++) {
-      seg = body[i];
-      var t = body.length > 1 ? i / (body.length - 1) : 0;
-      var inset = pad + cell * (0.1 + t * 0.09);
-      var s = cell - inset * 2;
-      if (s <= 0) { continue; }
-      if (goldenSnake) {
-        // Polished-metal shimmer travelling down the body.
-        ctx.fillStyle = NS.hsl(44, 100, 62 + 22 * (0.5 + 0.5 * Math.sin(i * 0.7 - time / 260)));
-      }
-      ctx.beginPath();
-      roundRectPath(ctx, seg.x * cell + inset, seg.y * cell + inset, s, s, Math.max(1, s * 0.3));
-      ctx.fill();
+    strokeLinks(bodyW, function () { return glow; });
+    strokeLinks(coreW, function () { return core; });
+
+    // Polished-metal shimmer travelling down the golden body. It is dashed along
+    // the body's own path so the highlights follow it round every corner; giving
+    // each link its own lightness instead made the snake read as a string of beads.
+    if (goldenSnake) {
+      ctx.strokeStyle = 'rgba(255,247,208,0.5)';
+      ctx.lineWidth = cell * 0.3;
+      ctx.setLineDash([cell * 0.7, cell * 1.6]);
+      ctx.lineDashOffset = -time / 9;
+      strokeWhole();
+      ctx.setLineDash([]);
     }
+
+    ctx.restore();
 
     // Eyes on the head, facing the direction of travel.
     var head = body[0];
