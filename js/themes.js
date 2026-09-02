@@ -733,200 +733,144 @@
     }
   };
 
-  /* ---- tactical map furniture ---- */
+  /* ---- armour, seen from above ---- */
 
-  var MAP_FRIEND = '#6cc8ff';
-  var MAP_ENEMY = '#ff6a5a';
-
-  function bezierAt(p, t) {
-    var u = 1 - t;
-    return {
-      x: u * u * u * p[0] + 3 * u * u * t * p[2] + 3 * u * t * t * p[4] + t * t * t * p[6],
-      y: u * u * u * p[1] + 3 * u * u * t * p[3] + 3 * u * t * t * p[5] + t * t * t * p[7]
-    };
-  }
-
-  // NATO-style counter: box plus the symbol for its arm of service.
-  function unitCounter(ctx, cx, cy, w, colour, kind, echelon) {
-    var h = w * 0.66;
-    ctx.fillStyle = 'rgba(8,12,6,0.82)';
-    ctx.fillRect(cx - w / 2, cy - h / 2, w, h);
-    ctx.strokeStyle = colour;
-    ctx.lineWidth = Math.max(1, w * 0.055);
-    ctx.strokeRect(cx - w / 2, cy - h / 2, w, h);
-
-    ctx.beginPath();
-    if (kind === 'infantry') {                    // crossed diagonals
-      ctx.moveTo(cx - w / 2, cy - h / 2); ctx.lineTo(cx + w / 2, cy + h / 2);
-      ctx.moveTo(cx + w / 2, cy - h / 2); ctx.lineTo(cx - w / 2, cy + h / 2);
-    } else if (kind === 'armour') {               // ellipse
-      ctx.ellipse(cx, cy, w * 0.30, h * 0.30, 0, 0, Math.PI * 2);
-    } else {                                      // artillery: filled dot
-      ctx.arc(cx, cy, w * 0.10, 0, Math.PI * 2);
-    }
-    ctx.stroke();
-    if (kind === 'artillery') { ctx.fillStyle = colour; ctx.fill(); }
-
-    // Echelon dots above the box.
-    ctx.fillStyle = colour;
-    for (var i = 0; i < (echelon || 0); i++) {
-      ctx.beginPath();
-      ctx.arc(cx + (i - (echelon - 1) / 2) * w * 0.16, cy - h * 0.72, w * 0.035, 0, Math.PI * 2);
-      ctx.fill();
-    }
-  }
-
-  // Front line with hatch ticks on the friendly side.
-  function frontLine(ctx, pts, colour, tick) {
-    ctx.strokeStyle = colour;
-    ctx.lineWidth = tick * 0.42;
-    ctx.beginPath();
-    ctx.moveTo(pts[0][0], pts[0][1]);
-    for (var i = 1; i < pts.length; i++) { ctx.lineTo(pts[i][0], pts[i][1]); }
-    ctx.stroke();
-
-    for (var j = 0; j < pts.length - 1; j++) {
-      var mx = (pts[j][0] + pts[j + 1][0]) / 2;
-      var my = (pts[j][1] + pts[j + 1][1]) / 2;
-      var dx = pts[j + 1][0] - pts[j][0], dy = pts[j + 1][1] - pts[j][1];
-      var len = Math.hypot(dx, dy) || 1;
-      ctx.beginPath();
-      ctx.moveTo(mx, my);
-      ctx.lineTo(mx - (dy / len) * tick, my + (dx / len) * tick);
-      ctx.stroke();
-    }
-  }
-
-  function advanceArrow(ctx, p, colour, w) {
+  // Track marks left behind, fading with distance.
+  function trackMarks(ctx, x, y, ang, size, len) {
+    var W = size * 0.62;
     ctx.save();
-    ctx.strokeStyle = colour;
-    ctx.lineWidth = w;
-    ctx.lineCap = 'round';
-    ctx.setLineDash([w * 1.8, w * 1.2]);
-    ctx.beginPath();
-    ctx.moveTo(p[0], p[1]);
-    ctx.bezierCurveTo(p[2], p[3], p[4], p[5], p[6], p[7]);
-    ctx.stroke();
-    ctx.setLineDash([]);
-
-    var tip = bezierAt(p, 1), near = bezierAt(p, 0.94);
-    var a = Math.atan2(tip.y - near.y, tip.x - near.x);
-    ctx.fillStyle = colour;
-    ctx.beginPath();
-    ctx.moveTo(tip.x, tip.y);
-    ctx.lineTo(tip.x - Math.cos(a - 0.42) * w * 3.2, tip.y - Math.sin(a - 0.42) * w * 3.2);
-    ctx.lineTo(tip.x - Math.cos(a + 0.42) * w * 3.2, tip.y - Math.sin(a + 0.42) * w * 3.2);
-    ctx.closePath();
-    ctx.fill();
+    ctx.translate(x, y);
+    ctx.rotate(ang);
+    for (var s = -1; s <= 1; s += 2) {
+      var off = s * W * 0.37;
+      var grad = ctx.createLinearGradient(-size * 0.5, 0, -size * 0.5 - len, 0);
+      grad.addColorStop(0, 'rgba(18,24,14,0.55)');
+      grad.addColorStop(1, 'rgba(18,24,14,0)');
+      ctx.fillStyle = grad;
+      ctx.fillRect(-size * 0.5 - len, off - W * 0.11, len, W * 0.22);
+    }
     ctx.restore();
   }
 
-  function compassRose(ctx, cx, cy, r, colour) {
-    ctx.strokeStyle = colour;
-    ctx.lineWidth = Math.max(1, r * 0.06);
-    ctx.beginPath();
-    ctx.arc(cx, cy, r, 0, Math.PI * 2);
-    ctx.stroke();
-    ctx.fillStyle = colour;
-    ctx.beginPath();
-    ctx.moveTo(cx, cy - r * 1.05);
-    ctx.lineTo(cx + r * 0.20, cy);
-    ctx.lineTo(cx, cy + r * 0.55);
-    ctx.lineTo(cx - r * 0.20, cy);
-    ctx.closePath();
-    ctx.fill();
-    ctx.font = 'bold ' + (r * 0.6) + 'px system-ui, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('N', cx, cy - r * 1.25);
-    ctx.textAlign = 'start';
-  }
+  // Hull, tracks with tread ticks, turret and gun. Dark silhouette, rim-lit.
+  function drawTank(ctx, x, y, size, ang, turretAng, body, rim) {
+    var L = size, W = size * 0.62;
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(ang);
 
-  function forestPatch(ctx, cx, cy, r, rnd) {
-    for (var i = 0; i < 9; i++) {
-      var a = rnd() * Math.PI * 2, d = rnd() * r;
-      var tx = cx + Math.cos(a) * d, ty = cy + Math.sin(a) * d;
-      var s = r * (0.16 + rnd() * 0.10);
-      ctx.fillStyle = 'rgba(58,120,64,0.5)';
+    ctx.fillStyle = 'rgba(0,0,0,0.40)';                 // ground shadow
+    ctx.fillRect(-L * 0.48 + size * 0.05, -W * 0.5 + size * 0.05, L * 0.96, W);
+
+    ctx.fillStyle = 'rgba(10,14,9,0.97)';               // tracks
+    ctx.fillRect(-L * 0.5, -W * 0.5, L, W * 0.27);
+    ctx.fillRect(-L * 0.5, W * 0.23, L, W * 0.27);
+    ctx.strokeStyle = rim;
+    ctx.lineWidth = Math.max(0.6, size * 0.022);
+    ctx.globalAlpha = 0.45;
+    for (var i = 0; i <= 7; i++) {                      // tread ticks
+      var tx = -L * 0.5 + (L / 7) * i;
       ctx.beginPath();
-      ctx.moveTo(tx, ty - s);
-      ctx.lineTo(tx + s * 0.62, ty + s * 0.6);
-      ctx.lineTo(tx - s * 0.62, ty + s * 0.6);
-      ctx.closePath();
-      ctx.fill();
+      ctx.moveTo(tx, -W * 0.5); ctx.lineTo(tx, -W * 0.23);
+      ctx.moveTo(tx, W * 0.23); ctx.lineTo(tx, W * 0.5);
+      ctx.stroke();
     }
+    ctx.globalAlpha = 1;
+
+    ctx.fillStyle = body;                               // hull
+    ctx.beginPath();
+    if (ctx.roundRect) { ctx.roundRect(-L * 0.44, -W * 0.34, L * 0.88, W * 0.68, size * 0.06); }
+    else { ctx.rect(-L * 0.44, -W * 0.34, L * 0.88, W * 0.68); }
+    ctx.fill();
+    ctx.strokeStyle = rim;
+    ctx.lineWidth = Math.max(0.8, size * 0.035);
+    ctx.stroke();
+
+    ctx.fillStyle = 'rgba(0,0,0,0.30)';                 // glacis plate
+    ctx.fillRect(L * 0.24, -W * 0.34, L * 0.12, W * 0.68);
+
+    // Turret rotates independently of the hull.
+    ctx.rotate(turretAng);
+    ctx.fillStyle = body;
+    ctx.beginPath();
+    ctx.arc(0, 0, W * 0.31, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = rim;
+    ctx.lineWidth = Math.max(0.8, size * 0.03);
+    ctx.stroke();
+
+    ctx.fillStyle = 'rgba(10,14,9,0.97)';               // gun
+    ctx.fillRect(W * 0.22, -size * 0.035, L * 0.52, size * 0.07);
+    ctx.strokeStyle = rim;
+    ctx.lineWidth = Math.max(0.6, size * 0.018);
+    ctx.strokeRect(W * 0.22, -size * 0.035, L * 0.52, size * 0.07);
+
+    ctx.fillStyle = 'rgba(0,0,0,0.45)';                 // hatch
+    ctx.beginPath();
+    ctx.arc(-W * 0.07, 0, W * 0.11, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
   }
 
   /* ---------------- 6. War Map ---------------- */
 
   var war = {
     key: 'WAR', name: 'War Map',
-    ground: '#0e1408', accent: '#b6ff5a',
+    ground: '#0d1409', accent: '#b6ff5a',
     accentSoft: 'rgba(182,255,90,0.35)', accentDim: 'rgba(182,255,90,0.12)',
-    foodHue: 45,           // amber objective pin - red would read as an enemy unit
+    foodHue: 45,
 
-    // Supply route the convoy runs along, and the radar post that sweeps.
-    route: [0.06, 0.92, 0.30, 0.74, 0.46, 0.96, 0.74, 0.62],
-    radar: [0.84, 0.20],
-    objective: [0.30, 0.30],
+    // Two radar posts, and the columns of armour crossing the ground.
+    radars: [[0.83, 0.17, 0.30, 0.85], [0.17, 0.84, 0.22, -0.6]],
+    columns: [
+      { y: 0.26, dir: -1, speed: 0.052, off: 0.10, size: 0.070, hostile: true },
+      { y: 0.34, dir: -1, speed: 0.045, off: 0.52, size: 0.062, hostile: true },
+      { y: 0.44, dir: -1, speed: 0.058, off: 0.80, size: 0.058, hostile: true },
+      { y: 0.62, dir: 1, speed: 0.048, off: 0.22, size: 0.070, hostile: false },
+      { y: 0.71, dir: 1, speed: 0.040, off: 0.62, size: 0.064, hostile: false },
+      { y: 0.80, dir: 1, speed: 0.055, off: 0.05, size: 0.058, hostile: false },
+      { y: 0.91, dir: 1, speed: 0.036, off: 0.44, size: 0.052, hostile: false }
+    ],
 
     paint: function (ctx, px, cells) {
       var rnd = NS.seededRandom(cells * 3719 + 83);
 
-      // Map board.
-      ctx.fillStyle = this.ground;
-      ctx.fillRect(0, 0, px, px);
-      var wash = ctx.createLinearGradient(0, 0, px, px);
-      wash.addColorStop(0, 'rgba(120,140,70,0.10)');
-      wash.addColorStop(0.5, 'rgba(80,100,50,0.04)');
-      wash.addColorStop(1, 'rgba(40,60,30,0.10)');
-      ctx.fillStyle = wash;
+      // Open ground, lit slightly from the north.
+      var g = ctx.createLinearGradient(0, 0, 0, px);
+      g.addColorStop(0, '#16210e');
+      g.addColorStop(0.5, '#0f1709');
+      g.addColorStop(1, '#080d05');
+      ctx.fillStyle = g;
       ctx.fillRect(0, 0, px, px);
 
-      // Foxing and creases, so it reads as paper.
-      for (var f = 0; f < 40; f++) {
-        var fx = rnd() * px, fy = rnd() * px, fr = px * (0.01 + rnd() * 0.05);
-        ctx.fillStyle = 'rgba(150,140,70,' + (0.010 + rnd() * 0.022) + ')';
-        ctx.beginPath();
-        ctx.arc(fx, fy, fr, 0, Math.PI * 2);
-        ctx.fill();
+      // Ground texture: scrub and shell scrapes, nothing that reads as a symbol.
+      for (var i = 0; i < cells * 16; i++) {
+        var sx = rnd() * px, sy = rnd() * px;
+        ctx.fillStyle = 'rgba(150,190,90,' + (0.015 + rnd() * 0.05) + ')';
+        ctx.fillRect(sx, sy, px * 0.003, px * 0.003);
       }
-      ctx.strokeStyle = 'rgba(0,0,0,0.22)';
-      ctx.lineWidth = Math.max(1, px * 0.0016);
-      [0.34, 0.68].forEach(function (c) {
-        ctx.beginPath(); ctx.moveTo(px * c, 0); ctx.lineTo(px * c, px); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(0, px * c); ctx.lineTo(px, px * c); ctx.stroke();
-      });
+      for (var c = 0; c < 14; c++) {
+        var cx = rnd() * px, cy = rnd() * px, cr = px * (0.008 + rnd() * 0.020);
+        ctx.fillStyle = 'rgba(0,0,0,0.22)';
+        ctx.beginPath();
+        ctx.ellipse(cx, cy, cr, cr * 0.72, rnd() * Math.PI, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(150,180,100,0.10)';
+        ctx.lineWidth = Math.max(1, px * 0.0014);
+        ctx.stroke();
+      }
 
-      /* ---- terrain ---- */
-
-      // River, with banks.
-      var river = [0.02, 0.16, 0.34, 0.30, 0.30, 0.62, 0.62, 0.80];
-      ctx.strokeStyle = 'rgba(56,120,150,0.55)';
-      ctx.lineWidth = px * 0.030;
-      ctx.lineCap = 'round';
-      ctx.beginPath();
-      ctx.moveTo(px * river[0], px * river[1]);
-      ctx.bezierCurveTo(px * river[2], px * river[3], px * river[4], px * river[5],
-        px * river[6], px * river[7]);
-      ctx.stroke();
-      ctx.strokeStyle = 'rgba(120,200,220,0.30)';
-      ctx.lineWidth = px * 0.006;
-      ctx.stroke();
-
-      // Contours.
-      var groups = 3;
+      // Two faint ridges, so the ground is not perfectly flat.
+      ctx.strokeStyle = 'rgba(182,255,90,0.07)';
       ctx.lineWidth = Math.max(1, px * 0.0018);
-      for (var g = 0; g < groups; g++) {
-        var ox = px * (0.18 + rnd() * 0.66), oy = px * (0.18 + rnd() * 0.66);
-        var rings = 3 + Math.floor(rnd() * 3);
-        var wob = 0.12 + rnd() * 0.14, phase = rnd() * Math.PI * 2;
-        for (var k = 1; k <= rings; k++) {
-          ctx.strokeStyle = 'rgba(182,255,90,' + (0.15 - k * 0.016) + ')';
+      for (var r = 0; r < 2; r++) {
+        var ox = px * (0.25 + r * 0.45), oy = px * (0.30 + r * 0.34);
+        for (var k = 1; k <= 3; k++) {
           ctx.beginPath();
-          for (var a = 0; a <= 56; a++) {
-            var t = (a / 56) * Math.PI * 2;
-            var rr = px * 0.028 * k * (1 + Math.sin(t * 3 + phase) * wob);
-            var xx = ox + Math.cos(t) * rr, yy = oy + Math.sin(t) * rr;
+          for (var a = 0; a <= 48; a++) {
+            var t = (a / 48) * Math.PI * 2;
+            var rr = px * 0.05 * k * (1 + Math.sin(t * 3 + r) * 0.18);
+            var xx = ox + Math.cos(t) * rr, yy = oy + Math.sin(t) * rr * 0.6;
             if (a === 0) { ctx.moveTo(xx, yy); } else { ctx.lineTo(xx, yy); }
           }
           ctx.closePath();
@@ -934,150 +878,86 @@
         }
       }
 
-      forestPatch(ctx, px * 0.18, px * 0.74, px * 0.10, rnd);
-      forestPatch(ctx, px * 0.72, px * 0.42, px * 0.09, rnd);
-
-      // Road, and a town where it meets the river.
-      ctx.strokeStyle = 'rgba(190,170,90,0.42)';
-      ctx.lineWidth = px * 0.010;
-      ctx.beginPath();
-      ctx.moveTo(0, px * 0.52);
-      ctx.bezierCurveTo(px * 0.30, px * 0.44, px * 0.60, px * 0.58, px, px * 0.46);
-      ctx.stroke();
-      ctx.strokeStyle = 'rgba(20,26,14,0.6)';
-      ctx.lineWidth = px * 0.003;
-      ctx.stroke();
-
-      ctx.fillStyle = 'rgba(200,190,120,0.45)';
-      for (var b = 0; b < 7; b++) {
-        ctx.fillRect(px * (0.40 + (b % 4) * 0.022), px * (0.50 + Math.floor(b / 4) * 0.026),
-          px * 0.014, px * 0.014);
-      }
-
-      /* ---- grid references ---- */
-      ctx.fillStyle = 'rgba(182,255,90,0.42)';
-      ctx.font = 'bold ' + (px * 0.020) + 'px ui-monospace, "Courier New", monospace';
-      var letters = 'ABCDEFGH';
-      for (var i = 0; i < 8; i++) {
-        ctx.fillText(letters[i], px * (0.055 + i * 0.121), px * 0.030);
-        ctx.fillText(String(i + 1), px * 0.012, px * (0.075 + i * 0.121));
-      }
-      ctx.strokeStyle = 'rgba(182,255,90,0.16)';
-      ctx.lineWidth = Math.max(1, px * 0.0022);
-      ctx.strokeRect(px * 0.035, px * 0.038, px * 0.945, px * 0.945);
-
-      /* ---- tactical overlay ---- */
-
-      frontLine(ctx, [[px * 0.10, px * 0.60], [px * 0.28, px * 0.52], [px * 0.44, px * 0.60],
-        [px * 0.62, px * 0.50], [px * 0.80, px * 0.56], [px * 0.96, px * 0.48]],
-        'rgba(255,106,90,0.75)', px * 0.020);
-
-      advanceArrow(ctx, [px * 0.16, px * 0.80, px * 0.24, px * 0.66,
-        px * 0.34, px * 0.62, px * 0.42, px * 0.50], MAP_FRIEND, px * 0.009);
-      advanceArrow(ctx, [px * 0.90, px * 0.26, px * 0.80, px * 0.36,
-        px * 0.74, px * 0.40, px * 0.66, px * 0.46], MAP_ENEMY, px * 0.009);
-
-      unitCounter(ctx, px * 0.20, px * 0.86, px * 0.085, MAP_FRIEND, 'infantry', 2);
-      unitCounter(ctx, px * 0.46, px * 0.78, px * 0.085, MAP_FRIEND, 'armour', 1);
-      unitCounter(ctx, px * 0.78, px * 0.86, px * 0.085, MAP_FRIEND, 'artillery', 3);
-      unitCounter(ctx, px * 0.62, px * 0.24, px * 0.085, MAP_ENEMY, 'armour', 2);
-      unitCounter(ctx, px * 0.30, px * 0.14, px * 0.085, MAP_ENEMY, 'infantry', 1);
-
-      compassRose(ctx, px * 0.115, px * 0.20, px * 0.035, 'rgba(182,255,90,0.6)');
-
-      // Scale bar.
-      ctx.fillStyle = 'rgba(182,255,90,0.55)';
-      for (var s = 0; s < 4; s++) {
-        if (s % 2 === 0) { ctx.fillRect(px * (0.80 + s * 0.035), px * 0.955, px * 0.035, px * 0.010); }
-      }
-      ctx.strokeStyle = 'rgba(182,255,90,0.55)';
-      ctx.lineWidth = Math.max(1, px * 0.0016);
-      ctx.strokeRect(px * 0.80, px * 0.955, px * 0.14, px * 0.010);
+      // Static rings of the two radar posts.
+      this.radars.forEach(function (rad) {
+        var rx = px * rad[0], ry = px * rad[1], rr = px * rad[2];
+        ctx.strokeStyle = 'rgba(182,255,90,0.16)';
+        ctx.lineWidth = Math.max(1, px * 0.0018);
+        [0.4, 0.7, 1].forEach(function (f) {
+          ctx.beginPath(); ctx.arc(rx, ry, rr * f, 0, Math.PI * 2); ctx.stroke();
+        });
+        ctx.beginPath();
+        ctx.moveTo(rx - rr, ry); ctx.lineTo(rx + rr, ry);
+        ctx.moveTo(rx, ry - rr); ctx.lineTo(rx, ry + rr);
+        ctx.stroke();
+      });
 
       vignette(ctx, px, 0.5);
     },
 
-    /* ---- the live layer ---- */
     drawOverlay: function (ctx, px, cells, time) {
       var t = time / 1000;
 
-      // Radar sweep from the post in the north east.
-      var rx = px * this.radar[0], ry = px * this.radar[1], rr = px * 0.30;
-      var ang = (t * 0.9) % (Math.PI * 2);
-      ctx.save();
-      ctx.beginPath();
-      ctx.arc(rx, ry, rr, 0, Math.PI * 2);
-      ctx.clip();
-      for (var i = 0; i < 16; i++) {                 // fading trail behind the beam
-        var a0 = ang - i * 0.05;
-        ctx.fillStyle = 'rgba(182,255,90,' + (0.085 * (1 - i / 16)) + ')';
+      // Radar sweeps.
+      this.radars.forEach(function (rad) {
+        var rx = px * rad[0], ry = px * rad[1], rr = px * rad[2];
+        var ang = (t * rad[3]) % (Math.PI * 2);
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(rx, ry, rr, 0, Math.PI * 2);
+        ctx.clip();
+        for (var i = 0; i < 14; i++) {
+          var a0 = ang - i * 0.055 * Math.sign(rad[3] || 1);
+          ctx.fillStyle = 'rgba(182,255,90,' + (0.075 * (1 - i / 14)) + ')';
+          ctx.beginPath();
+          ctx.moveTo(rx, ry);
+          ctx.arc(rx, ry, rr, Math.min(a0, a0 - 0.055), Math.max(a0, a0 - 0.055));
+          ctx.closePath();
+          ctx.fill();
+        }
+        ctx.restore();
+        ctx.strokeStyle = 'rgba(182,255,90,0.8)';
+        ctx.lineWidth = Math.max(1, px * 0.0028);
         ctx.beginPath();
         ctx.moveTo(rx, ry);
-        ctx.arc(rx, ry, rr, a0 - 0.05, a0);
-        ctx.closePath();
-        ctx.fill();
-      }
-      ctx.restore();
-      ctx.strokeStyle = 'rgba(182,255,90,0.85)';
-      ctx.lineWidth = Math.max(1, px * 0.003);
-      ctx.beginPath();
-      ctx.moveTo(rx, ry);
-      ctx.lineTo(rx + Math.cos(ang) * rr, ry + Math.sin(ang) * rr);
-      ctx.stroke();
-      ctx.strokeStyle = 'rgba(182,255,90,0.28)';
-      ctx.lineWidth = Math.max(1, px * 0.002);
-      [0.4, 0.7, 1].forEach(function (f) {
-        ctx.beginPath(); ctx.arc(rx, ry, rr * f, 0, Math.PI * 2); ctx.stroke();
+        ctx.lineTo(rx + Math.cos(ang) * rr, ry + Math.sin(ang) * rr);
+        ctx.stroke();
       });
 
-      // Contacts that light up as the beam passes over them.
-      [[0.74, 0.10], [0.93, 0.30], [0.78, 0.34]].forEach(function (c) {
-        var cx = px * c[0], cy = px * c[1];
-        var ca = Math.atan2(cy - ry, cx - rx);
-        var diff = (ang - ca + Math.PI * 4) % (Math.PI * 2);
-        var lit = Math.max(0, 1 - diff / 1.4);
-        if (lit <= 0.02) { return; }
-        ctx.fillStyle = 'rgba(255,106,90,' + lit + ')';
-        ctx.beginPath();
-        ctx.arc(cx, cy, px * 0.008, 0, Math.PI * 2);
-        ctx.fill();
+      // Armour crossing the ground. Each column loops off one edge and back on
+      // the other, so there is always movement without a crowd of vehicles.
+      var self = this;
+      this.columns.forEach(function (col, idx) {
+        var span = 1.34;
+        var travel = ((t * col.speed + col.off) % span);
+        var x = col.dir > 0 ? (travel - 0.17) * px : (1.17 - travel) * px;
+        var y = px * col.y + Math.sin(t * 0.5 + idx) * px * 0.004;   // slight wander
+        var ang = col.dir > 0 ? 0 : Math.PI;
+        // The turret tracks slowly across, independent of where the hull points.
+        var turret = Math.sin(t * 0.35 + idx * 1.7) * 0.5;
+        var size = px * col.size;
+
+        trackMarks(ctx, x, y, ang, size, px * 0.10);
+        drawTank(ctx, x, y, size, ang, turret,
+          col.hostile ? 'rgba(58,26,22,0.97)' : 'rgba(30,46,26,0.97)',
+          col.hostile ? 'rgba(255,120,100,0.65)' : 'rgba(150,220,120,0.6)');
+
+        // Anything inside a radar's reach paints a contact as the beam passes.
+        self.radars.forEach(function (rad) {
+          var rx = px * rad[0], ry = px * rad[1], rr = px * rad[2];
+          var d = Math.hypot(x - rx, y - ry);
+          if (d > rr) { return; }
+          var ca = Math.atan2(y - ry, x - rx);
+          var ang2 = (t * rad[3]) % (Math.PI * 2);
+          var diff = Math.abs(((ang2 - ca + Math.PI * 3) % (Math.PI * 2)) - Math.PI);
+          var lit = Math.max(0, 1 - (Math.PI - diff) / 1.1);
+          if (lit <= 0.02) { return; }
+          ctx.fillStyle = 'rgba(182,255,90,' + (lit * 0.85) + ')';
+          ctx.beginPath();
+          ctx.arc(x, y, px * 0.007, 0, Math.PI * 2);
+          ctx.fill();
+        });
       });
-
-      // Convoy running the supply route.
-      var route = this.route.map(function (v) { return v * px; });
-      ctx.setLineDash([px * 0.014, px * 0.010]);
-      ctx.strokeStyle = 'rgba(108,200,255,0.35)';
-      ctx.lineWidth = Math.max(1, px * 0.004);
-      ctx.beginPath();
-      ctx.moveTo(route[0], route[1]);
-      ctx.bezierCurveTo(route[2], route[3], route[4], route[5], route[6], route[7]);
-      ctx.stroke();
-      ctx.setLineDash([]);
-
-      for (var v = 0; v < 3; v++) {
-        var f2 = ((t * 0.11) + v * 0.14) % 1;
-        var p = bezierAt(route, f2);
-        var fade = Math.min(1, Math.min(f2, 1 - f2) * 8);
-        ctx.fillStyle = 'rgba(150,220,255,' + (0.9 * fade) + ')';
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, px * 0.007, 0, Math.PI * 2);
-        ctx.fill();
-      }
-
-      // Objective, pulsing.
-      var ox = px * this.objective[0], oy = px * this.objective[1];
-      var pulse = (t * 0.5) % 1;
-      ctx.strokeStyle = 'rgba(255,106,90,' + (0.55 * (1 - pulse)) + ')';
-      ctx.lineWidth = Math.max(1, px * 0.004);
-      ctx.beginPath();
-      ctx.arc(ox, oy, px * (0.018 + pulse * 0.055), 0, Math.PI * 2);
-      ctx.stroke();
-      ctx.strokeStyle = 'rgba(255,106,90,0.8)';
-      ctx.beginPath();
-      ctx.arc(ox, oy, px * 0.016, 0, Math.PI * 2);
-      ctx.moveTo(ox - px * 0.026, oy); ctx.lineTo(ox + px * 0.026, oy);
-      ctx.moveTo(ox, oy - px * 0.026); ctx.lineTo(ox, oy + px * 0.026);
-      ctx.stroke();
     },
 
     // Amber objective pin.
