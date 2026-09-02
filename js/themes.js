@@ -1890,7 +1890,7 @@
     key: 'WESTERN', name: 'Western',
     ground: '#1a0e06', accent: '#ff8a3d',
     accentSoft: 'rgba(255,138,61,0.35)', accentDim: 'rgba(255,138,61,0.12)',
-    foodHue: 48,
+    foodHue: 200,          // cold: the badge is silver, and the map is all warm
 
     // Dusk over a frontier street. Props are drawn in profile so a cactus reads
     // as a cactus; a plan view of one is just a blob.
@@ -2044,18 +2044,49 @@
       vignette(ctx, px, 0.5);
     },
 
-    // Sheriff's star.
+    // A marshal's star in cold silver. Gold was the obvious choice and the wrong
+    // one: this map is all warm orange and brown, so a gold star sank into it.
+    // Cold metal, a dark backing and a wide cool glow keep it off the ground.
     drawFood: function (ctx, x, y, cell, pulse) {
       var cx = x + cell / 2, cy = y + cell / 2;
-      var r = cell * (0.36 + pulse * 0.05);
-      var col = NS.hsl(this.foodHue, 100, 60);
-      withGlow(ctx, col, cell * (1.15 + pulse), function () {
-        ctx.fillStyle = col;
-        starPath(ctx, cx, cy, 5, r, r * 0.45);
+      var r = cell * (0.42 + pulse * 0.05);
+
+      // Dark backing, so the star never merges with whatever is under it.
+      ctx.fillStyle = 'rgba(14,8,3,0.62)';
+      ctx.beginPath();
+      ctx.arc(cx, cy, r * 1.12, 0, Math.PI * 2);
+      ctx.fill();
+
+      withGlow(ctx, 'rgba(150,225,255,0.95)', cell * (1.5 + pulse * 0.7), function () {
+        var metal = ctx.createLinearGradient(cx - r, cy - r, cx + r, cy + r);
+        metal.addColorStop(0, '#ffffff');
+        metal.addColorStop(0.45, '#cfeaff');
+        metal.addColorStop(1, '#8fc6e8');
+        ctx.fillStyle = metal;
+        starPath(ctx, cx, cy, 5, r, r * 0.46);
         ctx.fill();
       });
-      ctx.fillStyle = 'rgba(255,245,200,0.9)';
-      starPath(ctx, cx, cy, 5, r * 0.42, r * 0.19);
+
+      ctx.strokeStyle = 'rgba(18,26,36,0.75)';
+      ctx.lineWidth = Math.max(1, cell * 0.055);
+      starPath(ctx, cx, cy, 5, r, r * 0.46);
+      ctx.stroke();
+
+      // Balls on the points, as a real badge has.
+      ctx.fillStyle = '#eaf6ff';
+      for (var i = 0; i < 5; i++) {
+        var a = -Math.PI / 2 + (Math.PI * 2 / 5) * i;
+        ctx.beginPath();
+        ctx.arc(cx + Math.cos(a) * r * 0.94, cy + Math.sin(a) * r * 0.94, r * 0.11, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      ctx.fillStyle = 'rgba(40,60,80,0.55)';
+      ctx.beginPath();
+      ctx.arc(cx, cy, r * 0.30, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,0.95)';
+      starPath(ctx, cx - r * 0.22, cy - r * 0.26, 4, r * (0.26 + pulse * 0.08), r * 0.05);
       ctx.fill();
     }
   };
