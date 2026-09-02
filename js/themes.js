@@ -2136,19 +2136,20 @@
     ctx.restore();
   }
 
-  function lollipopStick(ctx, cx, cy, r, groundY) {
-    ctx.strokeStyle = '#f3e6ee';
-    ctx.lineWidth = r * 0.20;
+  // A stick of its own length, rather than one reaching down to a ground line -
+  // there is no floor any more.
+  function lollipopStick(ctx, cx, cy, r) {
+    var end = cy + r * 2.5;
+    ctx.strokeStyle = 'rgba(110,30,80,0.35)';
+    ctx.lineWidth = r * 0.26;
     ctx.lineCap = 'round';
     ctx.beginPath();
-    ctx.moveTo(cx, cy + r * 0.7);
-    ctx.lineTo(cx, groundY);
+    ctx.moveTo(cx, cy + r * 0.7); ctx.lineTo(cx, end);
     ctx.stroke();
-    ctx.strokeStyle = 'rgba(120,40,90,0.25)';
-    ctx.lineWidth = r * 0.06;
+    ctx.strokeStyle = '#f7ecf3';
+    ctx.lineWidth = r * 0.18;
     ctx.beginPath();
-    ctx.moveTo(cx + r * 0.05, cy + r * 0.7);
-    ctx.lineTo(cx + r * 0.05, groundY);
+    ctx.moveTo(cx, cy + r * 0.7); ctx.lineTo(cx, end);
     ctx.stroke();
   }
 
@@ -2184,44 +2185,42 @@
     ctx.restore();
   }
 
-  function candyCane(ctx, x, groundY, h) {
-    var w = h * 0.16;
+  // The stripes are dashes along the cane's own path, so they can only ever be
+  // on the cane. Clipping to the path does not work here: a clip uses the path's
+  // fill region, and a cane is a stroke - so the stripes escaped it entirely.
+  function candyCane(ctx, x, bottomY, h) {
+    var w = h * 0.17;
+    var hookR = h * 0.155;
+
+    function path() {
+      ctx.beginPath();
+      ctx.moveTo(x, bottomY);
+      ctx.lineTo(x, bottomY - h * 0.66);
+      ctx.arc(x + hookR, bottomY - h * 0.66, hookR, Math.PI, Math.PI * 2);
+    }
+
     ctx.save();
     ctx.lineCap = 'round';
+
+    path();                                              // rim
+    ctx.strokeStyle = 'rgba(110,30,80,0.45)';
+    ctx.lineWidth = w * 1.16;
+    ctx.stroke();
+
+    path();                                              // sugar
     ctx.strokeStyle = '#fff4f8';
     ctx.lineWidth = w;
-    ctx.beginPath();
-    ctx.moveTo(x, groundY);
-    ctx.lineTo(x, groundY - h * 0.68);
-    ctx.arc(x + h * 0.16, groundY - h * 0.68, h * 0.16, Math.PI, Math.PI * 2);
     ctx.stroke();
 
-    ctx.save();                                          // red barber stripes
-    ctx.beginPath();
-    ctx.lineWidth = w;
-    ctx.moveTo(x, groundY);
-    ctx.lineTo(x, groundY - h * 0.68);
-    ctx.arc(x + h * 0.16, groundY - h * 0.68, h * 0.16, Math.PI, Math.PI * 2);
-    ctx.strokeStyle = 'rgba(0,0,0,0)';
-    ctx.stroke();
-    ctx.clip();
+    path();                                              // stripes
     ctx.strokeStyle = '#e8365f';
-    ctx.lineWidth = h * 0.075;
-    for (var i = -2; i < 12; i++) {
-      var y0 = groundY - i * h * 0.14;
-      ctx.beginPath();
-      ctx.moveTo(x - w, y0);
-      ctx.lineTo(x + h * 0.42, y0 - h * 0.16);
-      ctx.stroke();
-    }
-    ctx.restore();
-
-    ctx.strokeStyle = 'rgba(120,40,90,0.30)';
-    ctx.lineWidth = h * 0.012;
-    ctx.beginPath();
-    ctx.moveTo(x - w / 2, groundY);
-    ctx.lineTo(x - w / 2, groundY - h * 0.68);
+    ctx.lineWidth = w * 0.96;
+    ctx.lineCap = 'butt';
+    ctx.setLineDash([h * 0.072, h * 0.078]);
+    ctx.lineDashOffset = h * 0.04;
     ctx.stroke();
+    ctx.setLineDash([]);
+
     ctx.restore();
   }
 
@@ -2372,94 +2371,77 @@
 
     // Lollipops live in the animated layer so their swirls can turn.
     lollipops: [
-      { x: 0.13, y: 0.58, r: 0.088, hue: 340, speed: 0.32 },
-      { x: 0.925, y: 0.50, r: 0.070, hue: 20, speed: -0.24 },
-      { x: 0.46, y: 0.68, r: 0.056, hue: 275, speed: 0.41 }
+      { x: 0.115, y: 0.235, r: 0.082, hue: 340, speed: 0.32 },
+      { x: 0.845, y: 0.185, r: 0.066, hue: 20, speed: -0.24 },
+      { x: 0.545, y: 0.545, r: 0.056, hue: 275, speed: 0.41 }
     ],
 
     paint: function (ctx, px, cells) {
       var rnd = NS.seededRandom(cells * 6733 + 149);
-      var groundY = px * 0.78;
 
-      // Sky: raspberry to plum.
-      var sky = ctx.createLinearGradient(0, 0, 0, groundY);
+      // One continuous raspberry-to-plum field. No floor: the board is a place
+      // things float in, and a striped ground band only crowded it.
+      var sky = ctx.createLinearGradient(0, 0, 0, px);
       sky.addColorStop(0, '#6d1c63');
       sky.addColorStop(0.55, '#45123f');
-      sky.addColorStop(1, '#2b0b31');
+      sky.addColorStop(1, '#26092c');
       ctx.fillStyle = sky;
-      ctx.fillRect(0, 0, px, groundY);
+      ctx.fillRect(0, 0, px, px);
 
-      // Candy-floss clouds.
-      for (var c = 0; c < 5; c++) {
-        var cx = px * (0.06 + rnd() * 0.9), cy = px * (0.06 + rnd() * 0.26);
+      // Candy-floss clouds, kept to the upper half so the lower board stays open.
+      for (var c = 0; c < 4; c++) {
+        var cx = px * (0.08 + rnd() * 0.86), cy = px * (0.05 + rnd() * 0.34);
         var s = px * (0.05 + rnd() * 0.05);
         for (var p = 0; p < 5; p++) {
           var ox = cx + (p - 2) * s * 0.62 + (rnd() - 0.5) * s * 0.3;
           var oy = cy + (rnd() - 0.5) * s * 0.4;
           var rr = s * (0.62 + rnd() * 0.5);
           var g2 = ctx.createRadialGradient(ox, oy, 0, ox, oy, rr);
-          g2.addColorStop(0, 'rgba(255,180,225,0.30)');
+          g2.addColorStop(0, 'rgba(255,180,225,0.26)');
           g2.addColorStop(1, 'rgba(255,150,210,0)');
           ctx.fillStyle = g2;
           ctx.fillRect(ox - rr, oy - rr, rr * 2, rr * 2);
         }
       }
 
-      // Ground: pale sugar with diagonal stripes.
-      ctx.fillStyle = '#f3d3e6';
-      ctx.fillRect(0, groundY, px, px - groundY);
-      ctx.save();
-      ctx.beginPath();
-      ctx.rect(0, groundY, px, px - groundY);
-      ctx.clip();
-      ctx.translate(px / 2, px);
-      ctx.rotate(-Math.PI / 4);
-      var band = px * 0.055;
-      for (var i = -18; i < 18; i++) {
-        ctx.fillStyle = i % 2 === 0 ? 'rgba(255,110,175,0.55)' : 'rgba(255,255,255,0.32)';
-        ctx.fillRect(i * band, -px, band, px * 2);
-      }
-      ctx.restore();
-      ctx.fillStyle = 'rgba(120,40,90,0.35)';
-      ctx.fillRect(0, groundY - px * 0.008, px, px * 0.010);
-
-      // Chocolate river across the middle distance.
+      // A ribbon of chocolate across the lower third.
       ctx.strokeStyle = '#5a3418';
-      ctx.lineWidth = px * 0.055;
+      ctx.lineWidth = px * 0.046;
       ctx.lineCap = 'round';
       ctx.beginPath();
-      ctx.moveTo(-px * 0.02, px * 0.60);
-      ctx.bezierCurveTo(px * 0.30, px * 0.52, px * 0.62, px * 0.70, px * 1.02, px * 0.58);
+      ctx.moveTo(-px * 0.02, px * 0.775);
+      ctx.bezierCurveTo(px * 0.32, px * 0.715, px * 0.66, px * 0.855, px * 1.02, px * 0.760);
       ctx.stroke();
-      ctx.strokeStyle = 'rgba(190,130,80,0.5)';
-      ctx.lineWidth = px * 0.010;
+      ctx.strokeStyle = 'rgba(190,130,80,0.45)';
+      ctx.lineWidth = px * 0.009;
       ctx.beginPath();
-      ctx.moveTo(-px * 0.02, px * 0.585);
-      ctx.bezierCurveTo(px * 0.30, px * 0.505, px * 0.62, px * 0.685, px * 1.02, px * 0.565);
+      ctx.moveTo(-px * 0.02, px * 0.763);
+      ctx.bezierCurveTo(px * 0.32, px * 0.703, px * 0.66, px * 0.843, px * 1.02, px * 0.748);
       ctx.stroke();
 
-      // The confectionery itself.
-      gumballMachine(ctx, px * 0.30, groundY + px * 0.02, px * 0.26, rnd);
-      candyCane(ctx, px * 0.62, groundY + px * 0.03, px * 0.24);
-      candyCane(ctx, px * 0.695, groundY + px * 0.05, px * 0.19);
-      cupcake(ctx, px * 0.775, groundY + px * 0.115, px * 0.20);
-      doughnut(ctx, px * 0.175, px * 0.905, px * 0.075, 330);
-      doughnut(ctx, px * 0.525, px * 0.945, px * 0.058, 195);
+      // The confectionery, spread across the whole board rather than lined up
+      // along a ground line.
+      gumballMachine(ctx, px * 0.225, px * 0.585, px * 0.235, rnd);
+      candyCane(ctx, px * 0.735, px * 0.485, px * 0.245);
+      candyCane(ctx, px * 0.375, px * 0.965, px * 0.195);
+      cupcake(ctx, px * 0.885, px * 0.925, px * 0.185);
+      doughnut(ctx, px * 0.115, px * 0.865, px * 0.070, 330);
+      doughnut(ctx, px * 0.655, px * 0.945, px * 0.055, 195);
 
-      wrappedSweet(ctx, px * 0.40, px * 0.885, px * 0.035, 50, -0.3);
-      wrappedSweet(ctx, px * 0.78, px * 0.925, px * 0.030, 275, 0.5);
-      wrappedSweet(ctx, px * 0.06, px * 0.70, px * 0.026, 200, 0.2);
+      wrappedSweet(ctx, px * 0.335, px * 0.115, px * 0.030, 50, -0.3);
+      wrappedSweet(ctx, px * 0.905, px * 0.475, px * 0.027, 275, 0.5);
+      wrappedSweet(ctx, px * 0.075, px * 0.640, px * 0.024, 200, 0.2);
 
-      // Jelly beans and sprinkles.
+      // Jelly beans and sprinkles, thinned right out.
       var beanHues = [340, 20, 50, 140, 200, 280];
-      for (var b = 0; b < 12; b++) {
-        var bx = rnd() * px, by = groundY + rnd() * (px - groundY);
+      for (var b = 0; b < 6; b++) {
+        var bx = px * (0.10 + rnd() * 0.82), by = px * (0.30 + rnd() * 0.65);
         ctx.save();
         ctx.translate(bx, by);
         ctx.rotate(rnd() * Math.PI);
         ctx.fillStyle = NS.hsl(beanHues[Math.floor(rnd() * beanHues.length)], 85, 62);
         ctx.beginPath();
-        ctx.ellipse(0, 0, px * 0.016, px * 0.011, 0, 0, Math.PI * 2);
+        ctx.ellipse(0, 0, px * 0.015, px * 0.010, 0, 0, Math.PI * 2);
         ctx.fill();
         ctx.fillStyle = 'rgba(255,255,255,0.4)';
         ctx.beginPath();
@@ -2467,25 +2449,24 @@
         ctx.fill();
         ctx.restore();
       }
-      for (var s2 = 0; s2 < cells * 5; s2++) {
+      for (var s2 = 0; s2 < Math.round(cells * 1.6); s2++) {
         var sx = rnd() * px, sy = rnd() * px;
         ctx.save();
         ctx.translate(sx, sy);
         ctx.rotate(rnd() * Math.PI);
-        ctx.fillStyle = NS.hsl(beanHues[Math.floor(rnd() * beanHues.length)], 95, 70, 0.55);
+        ctx.fillStyle = NS.hsl(beanHues[Math.floor(rnd() * beanHues.length)], 95, 70, 0.42);
         ctx.fillRect(-px * 0.007, -px * 0.0022, px * 0.014, px * 0.0044);
         ctx.restore();
       }
 
-      vignette(ctx, px, 0.42);
+      vignette(ctx, px, 0.45);
     },
 
     drawOverlay: function (ctx, px, cells, time) {
       var t = time / 1000;
-      var groundY = px * 0.80;
       this.lollipops.forEach(function (l) {
         var cx = px * l.x, cy = px * l.y, r = px * l.r;
-        lollipopStick(ctx, cx, cy, r, groundY);
+        lollipopStick(ctx, cx, cy, r);
         lollipopHead(ctx, cx, cy, r, t * l.speed, l.hue);
       });
     },
