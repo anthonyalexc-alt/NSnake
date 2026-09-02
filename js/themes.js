@@ -2091,101 +2091,445 @@
     }
   };
 
+  /* ---- confectionery ---- */
+
+  // Classic two-tone swirl. Drawn as a spiral stroke over a white disc, so the
+  // white shows through as the second colour of the swirl.
+  function lollipopHead(ctx, cx, cy, r, rot, hue) {
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(rot);
+
+    ctx.fillStyle = '#fff6fb';
+    ctx.beginPath();
+    ctx.arc(0, 0, r, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(0, 0, r, 0, Math.PI * 2);
+    ctx.clip();
+    ctx.strokeStyle = NS.hsl(hue, 90, 62);
+    ctx.lineWidth = r * 0.30;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    for (var i = 0; i <= 90; i++) {
+      var t = i / 90;
+      var a = t * Math.PI * 5.2;
+      var rr = r * 1.06 * t;
+      var x = Math.cos(a) * rr, y = Math.sin(a) * rr;
+      if (i === 0) { ctx.moveTo(x, y); } else { ctx.lineTo(x, y); }
+    }
+    ctx.stroke();
+    ctx.restore();
+
+    ctx.strokeStyle = 'rgba(120,40,90,0.45)';
+    ctx.lineWidth = r * 0.10;
+    ctx.beginPath();
+    ctx.arc(0, 0, r, 0, Math.PI * 2);
+    ctx.stroke();
+
+    ctx.fillStyle = 'rgba(255,255,255,0.55)';           // gloss
+    ctx.beginPath();
+    ctx.ellipse(-r * 0.34, -r * 0.38, r * 0.26, r * 0.16, -0.7, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function lollipopStick(ctx, cx, cy, r, groundY) {
+    ctx.strokeStyle = '#f3e6ee';
+    ctx.lineWidth = r * 0.20;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(cx, cy + r * 0.7);
+    ctx.lineTo(cx, groundY);
+    ctx.stroke();
+    ctx.strokeStyle = 'rgba(120,40,90,0.25)';
+    ctx.lineWidth = r * 0.06;
+    ctx.beginPath();
+    ctx.moveTo(cx + r * 0.05, cy + r * 0.7);
+    ctx.lineTo(cx + r * 0.05, groundY);
+    ctx.stroke();
+  }
+
+  function wrappedSweet(ctx, cx, cy, r, hue, rot) {
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(rot || 0);
+    var body = NS.hsl(hue, 92, 62);
+
+    ctx.fillStyle = body;                                // wrapper tails
+    [-1, 1].forEach(function (s) {
+      ctx.beginPath();
+      ctx.moveTo(s * r * 0.9, 0);
+      ctx.lineTo(s * r * 2.0, -r * 0.78);
+      ctx.lineTo(s * r * 1.72, 0);
+      ctx.lineTo(s * r * 2.0, r * 0.78);
+      ctx.closePath();
+      ctx.fill();
+    });
+
+    ctx.beginPath();
+    ctx.arc(0, 0, r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(90,25,70,0.4)';
+    ctx.lineWidth = r * 0.12;
+    ctx.stroke();
+
+    ctx.strokeStyle = 'rgba(255,255,255,0.75)';          // stripe
+    ctx.lineWidth = r * 0.22;
+    ctx.beginPath();
+    ctx.arc(0, 0, r * 0.55, Math.PI * 0.2, Math.PI * 1.1);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function candyCane(ctx, x, groundY, h) {
+    var w = h * 0.16;
+    ctx.save();
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = '#fff4f8';
+    ctx.lineWidth = w;
+    ctx.beginPath();
+    ctx.moveTo(x, groundY);
+    ctx.lineTo(x, groundY - h * 0.68);
+    ctx.arc(x + h * 0.16, groundY - h * 0.68, h * 0.16, Math.PI, Math.PI * 2);
+    ctx.stroke();
+
+    ctx.save();                                          // red barber stripes
+    ctx.beginPath();
+    ctx.lineWidth = w;
+    ctx.moveTo(x, groundY);
+    ctx.lineTo(x, groundY - h * 0.68);
+    ctx.arc(x + h * 0.16, groundY - h * 0.68, h * 0.16, Math.PI, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(0,0,0,0)';
+    ctx.stroke();
+    ctx.clip();
+    ctx.strokeStyle = '#e8365f';
+    ctx.lineWidth = h * 0.075;
+    for (var i = -2; i < 12; i++) {
+      var y0 = groundY - i * h * 0.14;
+      ctx.beginPath();
+      ctx.moveTo(x - w, y0);
+      ctx.lineTo(x + h * 0.42, y0 - h * 0.16);
+      ctx.stroke();
+    }
+    ctx.restore();
+
+    ctx.strokeStyle = 'rgba(120,40,90,0.30)';
+    ctx.lineWidth = h * 0.012;
+    ctx.beginPath();
+    ctx.moveTo(x - w / 2, groundY);
+    ctx.lineTo(x - w / 2, groundY - h * 0.68);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function gumballMachine(ctx, x, groundY, h, rnd) {
+    var r = h * 0.30;
+    var globeY = groundY - h * 0.66;
+
+    ctx.fillStyle = '#c8194a';                           // base
+    ctx.beginPath();
+    ctx.moveTo(x - r * 0.85, groundY);
+    ctx.lineTo(x - r * 0.55, groundY - h * 0.30);
+    ctx.lineTo(x + r * 0.55, groundY - h * 0.30);
+    ctx.lineTo(x + r * 0.85, groundY);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.18)';
+    ctx.fillRect(x - r * 0.7, groundY - h * 0.24, r * 1.4, h * 0.05);
+
+    ctx.save();                                          // glass globe
+    ctx.beginPath();
+    ctx.arc(x, globeY, r, 0, Math.PI * 2);
+    ctx.clip();
+    ctx.fillStyle = 'rgba(255,240,250,0.18)';
+    ctx.fillRect(x - r, globeY - r, r * 2, r * 2);
+    var hues = [340, 20, 50, 140, 195, 275];
+    for (var i = 0; i < 22; i++) {
+      var a = rnd() * Math.PI * 2, d = Math.sqrt(rnd()) * r * 0.86;
+      ctx.fillStyle = NS.hsl(hues[Math.floor(rnd() * hues.length)], 90, 62);
+      ctx.beginPath();
+      ctx.arc(x + Math.cos(a) * d, globeY + Math.sin(a) * d * 0.98, r * 0.15, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+    ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+    ctx.lineWidth = r * 0.09;
+    ctx.beginPath();
+    ctx.arc(x, globeY, r, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.strokeStyle = 'rgba(255,255,255,0.7)';
+    ctx.lineWidth = r * 0.10;
+    ctx.beginPath();
+    ctx.arc(x, globeY, r * 0.78, Math.PI * 1.1, Math.PI * 1.5);
+    ctx.stroke();
+
+    ctx.fillStyle = '#8e0f34';                           // dispenser
+    ctx.fillRect(x - r * 0.22, groundY - h * 0.34, r * 0.44, h * 0.09);
+  }
+
+  function cupcake(ctx, x, groundY, h) {
+    var w = h * 0.62;
+    ctx.fillStyle = '#d98cc0';                           // case
+    ctx.beginPath();
+    ctx.moveTo(x - w / 2, groundY - h * 0.42);
+    ctx.lineTo(x + w / 2, groundY - h * 0.42);
+    ctx.lineTo(x + w * 0.36, groundY);
+    ctx.lineTo(x - w * 0.36, groundY);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(120,40,90,0.35)';
+    ctx.lineWidth = h * 0.03;
+    for (var i = -2; i <= 2; i++) {
+      ctx.beginPath();
+      ctx.moveTo(x + i * w * 0.17, groundY - h * 0.42);
+      ctx.lineTo(x + i * w * 0.13, groundY);
+      ctx.stroke();
+    }
+
+    // Frosting: a stacked swirl, tinted rather than white so it does not read
+    // as a grey cloud against the pale sugar ground.
+    [[0.46, 0.36, '#ffc9e4'], [0.63, 0.28, '#ffd9ec'], [0.78, 0.19, '#ffe9f4']]
+      .forEach(function (s, k) {
+        ctx.fillStyle = s[2];
+        ctx.beginPath();
+        ctx.arc(x + (k % 2 ? 1 : -1) * w * 0.11, groundY - h * s[0], w * s[1], 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(190,80,140,0.35)';
+        ctx.lineWidth = h * 0.018;
+        ctx.stroke();
+      });
+
+    ctx.fillStyle = '#e8365f';                           // cherry
+    ctx.beginPath();
+    ctx.arc(x, groundY - h * 0.94, w * 0.14, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#4f8f3a';
+    ctx.lineWidth = h * 0.022;
+    ctx.beginPath();
+    ctx.moveTo(x, groundY - h * 1.03);
+    ctx.quadraticCurveTo(x + w * 0.14, groundY - h * 1.12, x + w * 0.22, groundY - h * 1.02);
+    ctx.stroke();
+  }
+
+  function doughnut(ctx, cx, cy, r, hue) {
+    var hole = r * 0.34;
+
+    // The hole is a reversed subpath, not an erase. Cutting it with
+    // destination-out would take the background out with it and leave a black
+    // disc, since there is nothing behind the board to show through.
+    function ring(outerAt) {
+      ctx.beginPath();
+      for (var i = 0; i <= 44; i++) {
+        var a = (i / 44) * Math.PI * 2;
+        var rr = outerAt(a);
+        var x = cx + Math.cos(a) * rr, y = cy + Math.sin(a) * rr;
+        if (i === 0) { ctx.moveTo(x, y); } else { ctx.lineTo(x, y); }
+      }
+      ctx.closePath();
+      ctx.arc(cx, cy, hole, 0, Math.PI * 2, true);       // reversed: leaves a hole
+    }
+
+    ctx.fillStyle = '#b8763f';
+    ring(function () { return r; });
+    ctx.fill();
+
+    ctx.fillStyle = NS.hsl(hue, 85, 72);                 // icing with drips
+    ring(function (a) { return r * (0.90 + Math.sin(a * 7) * 0.09); });
+    ctx.fill();
+
+    ctx.save();                                          // sprinkles, on the icing only
+    ring(function (a) { return r * (0.88 + Math.sin(a * 7) * 0.09); });
+    ctx.clip();
+    var sh = [340, 50, 140, 200, 280];
+    for (var s = 0; s < 14; s++) {
+      var sa = (s / 14) * Math.PI * 2 * 1.7, sd = r * (0.52 + (s % 3) * 0.13);
+      ctx.save();
+      ctx.translate(cx + Math.cos(sa) * sd, cy + Math.sin(sa) * sd);
+      ctx.rotate(sa);
+      ctx.fillStyle = NS.hsl(sh[s % sh.length], 90, 66);
+      ctx.fillRect(-r * 0.10, -r * 0.032, r * 0.20, r * 0.064);
+      ctx.restore();
+    }
+    ctx.restore();
+
+    ctx.strokeStyle = 'rgba(90,50,20,0.5)';              // inner edge
+    ctx.lineWidth = r * 0.05;
+    ctx.beginPath();
+    ctx.arc(cx, cy, hole, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+
   /* ---------------- 9. Candy ---------------- */
 
   var candy = {
     key: 'CANDY', name: 'Candy',
-    ground: '#1a0620', accent: '#ff7ad9',
+    ground: '#2b0b31', accent: '#ff7ad9',
     accentSoft: 'rgba(255,122,217,0.35)', accentDim: 'rgba(255,122,217,0.12)',
-    foodHue: 150,
+    foodHue: 155,          // mint, the one colour not already on the board
+
+    // Lollipops live in the animated layer so their swirls can turn.
+    lollipops: [
+      { x: 0.13, y: 0.58, r: 0.088, hue: 340, speed: 0.32 },
+      { x: 0.925, y: 0.50, r: 0.070, hue: 20, speed: -0.24 },
+      { x: 0.46, y: 0.68, r: 0.056, hue: 275, speed: 0.41 }
+    ],
 
     paint: function (ctx, px, cells) {
       var rnd = NS.seededRandom(cells * 6733 + 149);
+      var groundY = px * 0.78;
 
-      ctx.fillStyle = this.ground;
-      ctx.fillRect(0, 0, px, px);
+      // Sky: raspberry to plum.
+      var sky = ctx.createLinearGradient(0, 0, 0, groundY);
+      sky.addColorStop(0, '#6d1c63');
+      sky.addColorStop(0.55, '#45123f');
+      sky.addColorStop(1, '#2b0b31');
+      ctx.fillStyle = sky;
+      ctx.fillRect(0, 0, px, groundY);
 
-      // Diagonal candy stripes.
+      // Candy-floss clouds.
+      for (var c = 0; c < 5; c++) {
+        var cx = px * (0.06 + rnd() * 0.9), cy = px * (0.06 + rnd() * 0.26);
+        var s = px * (0.05 + rnd() * 0.05);
+        for (var p = 0; p < 5; p++) {
+          var ox = cx + (p - 2) * s * 0.62 + (rnd() - 0.5) * s * 0.3;
+          var oy = cy + (rnd() - 0.5) * s * 0.4;
+          var rr = s * (0.62 + rnd() * 0.5);
+          var g2 = ctx.createRadialGradient(ox, oy, 0, ox, oy, rr);
+          g2.addColorStop(0, 'rgba(255,180,225,0.30)');
+          g2.addColorStop(1, 'rgba(255,150,210,0)');
+          ctx.fillStyle = g2;
+          ctx.fillRect(ox - rr, oy - rr, rr * 2, rr * 2);
+        }
+      }
+
+      // Ground: pale sugar with diagonal stripes.
+      ctx.fillStyle = '#f3d3e6';
+      ctx.fillRect(0, groundY, px, px - groundY);
       ctx.save();
-      ctx.translate(px / 2, px / 2);
+      ctx.beginPath();
+      ctx.rect(0, groundY, px, px - groundY);
+      ctx.clip();
+      ctx.translate(px / 2, px);
       ctx.rotate(-Math.PI / 4);
-      ctx.translate(-px, -px);
-      var band = px * 0.08;
-      for (var i = 0; i < Math.ceil((px * 2) / band) + 1; i++) {
-        ctx.fillStyle = i % 2 === 0
-          ? 'rgba(255,122,217,0.075)'
-          : 'rgba(255,255,255,0.035)';
-        ctx.fillRect(i * band, 0, band, px * 2);
+      var band = px * 0.055;
+      for (var i = -18; i < 18; i++) {
+        ctx.fillStyle = i % 2 === 0 ? 'rgba(255,110,175,0.55)' : 'rgba(255,255,255,0.32)';
+        ctx.fillRect(i * band, -px, band, px * 2);
       }
       ctx.restore();
+      ctx.fillStyle = 'rgba(120,40,90,0.35)';
+      ctx.fillRect(0, groundY - px * 0.008, px, px * 0.010);
 
-      // Sprinkles.
-      var hues = [340, 20, 55, 130, 190, 280];
-      var sprinkles = Math.round(cells * cells * 0.05);
-      for (var s = 0; s < sprinkles; s++) {
+      // Chocolate river across the middle distance.
+      ctx.strokeStyle = '#5a3418';
+      ctx.lineWidth = px * 0.055;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(-px * 0.02, px * 0.60);
+      ctx.bezierCurveTo(px * 0.30, px * 0.52, px * 0.62, px * 0.70, px * 1.02, px * 0.58);
+      ctx.stroke();
+      ctx.strokeStyle = 'rgba(190,130,80,0.5)';
+      ctx.lineWidth = px * 0.010;
+      ctx.beginPath();
+      ctx.moveTo(-px * 0.02, px * 0.585);
+      ctx.bezierCurveTo(px * 0.30, px * 0.505, px * 0.62, px * 0.685, px * 1.02, px * 0.565);
+      ctx.stroke();
+
+      // The confectionery itself.
+      gumballMachine(ctx, px * 0.30, groundY + px * 0.02, px * 0.26, rnd);
+      candyCane(ctx, px * 0.62, groundY + px * 0.03, px * 0.24);
+      candyCane(ctx, px * 0.695, groundY + px * 0.05, px * 0.19);
+      cupcake(ctx, px * 0.775, groundY + px * 0.115, px * 0.20);
+      doughnut(ctx, px * 0.175, px * 0.905, px * 0.075, 330);
+      doughnut(ctx, px * 0.525, px * 0.945, px * 0.058, 195);
+
+      wrappedSweet(ctx, px * 0.40, px * 0.885, px * 0.035, 50, -0.3);
+      wrappedSweet(ctx, px * 0.78, px * 0.925, px * 0.030, 275, 0.5);
+      wrappedSweet(ctx, px * 0.06, px * 0.70, px * 0.026, 200, 0.2);
+
+      // Jelly beans and sprinkles.
+      var beanHues = [340, 20, 50, 140, 200, 280];
+      for (var b = 0; b < 12; b++) {
+        var bx = rnd() * px, by = groundY + rnd() * (px - groundY);
+        ctx.save();
+        ctx.translate(bx, by);
+        ctx.rotate(rnd() * Math.PI);
+        ctx.fillStyle = NS.hsl(beanHues[Math.floor(rnd() * beanHues.length)], 85, 62);
+        ctx.beginPath();
+        ctx.ellipse(0, 0, px * 0.016, px * 0.011, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = 'rgba(255,255,255,0.4)';
+        ctx.beginPath();
+        ctx.ellipse(-px * 0.004, -px * 0.003, px * 0.005, px * 0.003, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+      for (var s2 = 0; s2 < cells * 5; s2++) {
         var sx = rnd() * px, sy = rnd() * px;
-        var len = px * (0.010 + rnd() * 0.012);
-        var thick = len * 0.42;
-        var hue = hues[Math.floor(rnd() * hues.length)];
-        var col = NS.hsl(hue, 95, 70);
         ctx.save();
         ctx.translate(sx, sy);
         ctx.rotate(rnd() * Math.PI);
-        ctx.fillStyle = col;
-        ctx.globalAlpha = 0.35 + rnd() * 0.4;
-        if (ctx.roundRect) {
-          ctx.beginPath();
-          ctx.roundRect(-len / 2, -thick / 2, len, thick, thick / 2);
-          ctx.fill();
-        } else {
-          ctx.fillRect(-len / 2, -thick / 2, len, thick);
-        }
+        ctx.fillStyle = NS.hsl(beanHues[Math.floor(rnd() * beanHues.length)], 95, 70, 0.55);
+        ctx.fillRect(-px * 0.007, -px * 0.0022, px * 0.014, px * 0.0044);
         ctx.restore();
       }
 
-      // A few glossy gumballs.
-      for (var b = 0; b < Math.max(3, Math.round(cells * 0.18)); b++) {
-        var gx = rnd() * px, gy = rnd() * px, gr = px * (0.012 + rnd() * 0.016);
-        var gh = hues[Math.floor(rnd() * hues.length)];
-        withGlow(ctx, NS.hsl(gh, 100, 70), px * 0.02, function () {
-          ctx.fillStyle = NS.hsl(gh, 95, 68, 0.5);
-          ctx.beginPath();
-          ctx.arc(gx, gy, gr, 0, Math.PI * 2);
-          ctx.fill();
-        });
-      }
-
-      gridLines(ctx, px, cells, 'rgba(255,255,255,0.05)', 1);
-      vignette(ctx, px, 0.45);
+      vignette(ctx, px, 0.42);
     },
 
-    // Wrapped mint sweet.
+    drawOverlay: function (ctx, px, cells, time) {
+      var t = time / 1000;
+      var groundY = px * 0.80;
+      this.lollipops.forEach(function (l) {
+        var cx = px * l.x, cy = px * l.y, r = px * l.r;
+        lollipopStick(ctx, cx, cy, r, groundY);
+        lollipopHead(ctx, cx, cy, r, t * l.speed, l.hue);
+      });
+    },
+
+    // Mint humbug: the one flavour not already lying around on the ground.
     drawFood: function (ctx, x, y, cell, pulse) {
       var cx = x + cell / 2, cy = y + cell / 2;
-      var r = cell * (0.26 + pulse * 0.04);
-      var col = NS.hsl(this.foodHue, 90, 60);
-      withGlow(ctx, col, cell * (1.1 + pulse), function () {
+      var r = cell * (0.28 + pulse * 0.04);
+      var col = NS.hsl(this.foodHue, 90, 58);
+
+      // A soft dark pool rather than a hard disc: the board here is busy and
+      // pale in places, and the sweet needs separating from it without looking
+      // like it is sitting on a coin.
+      var pool = ctx.createRadialGradient(cx, cy, r * 0.7, cx, cy, r * 2.2);
+      pool.addColorStop(0, 'rgba(30,6,26,0.62)');
+      pool.addColorStop(1, 'rgba(30,6,26,0)');
+      ctx.fillStyle = pool;
+      ctx.fillRect(cx - r * 2.2, cy - r * 2.2, r * 4.4, r * 4.4);
+
+      withGlow(ctx, col, cell * (1.2 + pulse), function () {
         ctx.fillStyle = col;
+        [-1, 1].forEach(function (s) {                   // wrapper tails
+          ctx.beginPath();
+          ctx.moveTo(s * r * 0.9 + cx, cy);
+          ctx.lineTo(s * r * 2.0 + cx, cy - r * 0.8);
+          ctx.lineTo(s * r * 1.7 + cx, cy);
+          ctx.lineTo(s * r * 2.0 + cx, cy + r * 0.8);
+          ctx.closePath();
+          ctx.fill();
+        });
         ctx.beginPath();
         ctx.arc(cx, cy, r, 0, Math.PI * 2);
         ctx.fill();
-        // Wrapper twists either side.
-        ctx.beginPath();
-        ctx.moveTo(cx - r, cy);
-        ctx.lineTo(cx - r * 2.0, cy - r * 0.75);
-        ctx.lineTo(cx - r * 2.0, cy + r * 0.75);
-        ctx.closePath();
-        ctx.moveTo(cx + r, cy);
-        ctx.lineTo(cx + r * 2.0, cy - r * 0.75);
-        ctx.lineTo(cx + r * 2.0, cy + r * 0.75);
-        ctx.closePath();
-        ctx.fill();
       });
-      ctx.strokeStyle = 'rgba(255,255,255,0.85)';
-      ctx.lineWidth = Math.max(1, cell * 0.06);
+
+      ctx.strokeStyle = 'rgba(255,255,255,0.9)';
+      ctx.lineWidth = Math.max(1, cell * 0.07);
       ctx.beginPath();
       ctx.arc(cx, cy, r * 0.55, Math.PI * 0.15, Math.PI * 1.15);
       ctx.stroke();
+      ctx.fillStyle = 'rgba(255,255,255,0.85)';
+      ctx.beginPath();
+      ctx.arc(cx - r * 0.3, cy - r * 0.32, r * 0.16, 0, Math.PI * 2);
+      ctx.fill();
     }
   };
 

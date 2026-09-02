@@ -95,7 +95,7 @@ an Easy score should never outrank a Hard one.
 | 50–59 | War Map — open ground seen from above: two sweeping radars and columns of tanks driving across it, amber objective pin |
 | 60–69 | Space — nebula and starfield, a ringed gas giant, rocket, comet and satellite; green energy cell |
 | 70–79 | Western — a frontier main street at dusk: storefronts, boardwalk, horses at the rail, silver marshal's badge |
-| 80–89 | Candy — diagonal stripes and sprinkles, mint sweet |
+| 80–89 | Candy — a confectionery landscape: lollipops with turning swirls, gumball machine, candy canes, doughnuts, a chocolate river; mint humbug |
 | 90–99 | wraps back to Techy |
 | **100+** | **Golden** — a glimmering slab of gold bullion, cut diamonds for apples. Gold snake, permanent |
 
