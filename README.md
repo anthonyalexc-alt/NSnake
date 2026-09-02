@@ -89,7 +89,7 @@ an Easy score should never outrank a Hard one.
 | --- | --- |
 | 0–9 | Techy — circuit traces and solder nodes, magenta chip |
 | 10–19 | Grassy — neon blades and pollen, red apple |
-| 20–29 | Blocky — a world of toy bricks: a stepped tower, an arch, loose pieces, and bricks still dropping in; cyan brick |
+| 20–29 | Blocky — pastel-neon confetti tiles, cyan cube |
 | 30–39 | Medieval — a castle great hall: flagstones, a runner, columns, window light, walls hung with heraldry |
 | 40–49 | Sky — stars and drifting cloud, a small sun |
 | 50–59 | War Map — open ground seen from above: two sweeping radars and columns of tanks driving across it, amber objective pin |
